@@ -1,0 +1,15 @@
+set log /var/log/monit.log
+set idfile /var/lib/monit/id
+set statefile /var/lib/monit/state
+set eventqueue basedir /var/lib/monit/events slots 100
+
+set daemon {{ monit_check_interval }} with start delay {{ monit_start_delay }}
+
+{% if monit_alert_enabled %}
+set alert {{ monit_alert_email }}
+{% endif %}
+
+set mailserver localhost port 25
+
+# Include service configurations
+include /etc/monit/conf.d/*

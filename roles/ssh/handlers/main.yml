@@ -1,0 +1,9 @@
+---
+# SSH role handlers
+
+- name: Restart SSH
+  service:
+    name: sshd
+    state: restarted
+    daemon_reload: yes
+  become: yes

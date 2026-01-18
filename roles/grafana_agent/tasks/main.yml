@@ -1,0 +1,77 @@
+---
+# Grafana Agent role - Log shipping and metrics collection
+
+- name: Install Grafana Agent repository key
+  apt_key:
+    url: https://apt.grafana.com/gpg.key
+    state: present
+  become: yes
+  tags:
+    - grafana-agent
+    - monitoring
+
+- name: Add Grafana Agent repository
+  apt_repository:
+    repo: deb https://apt.grafana.com stable main
+    state: present
+    filename: grafana
+  become: yes
+  tags:
+    - grafana-agent
+    - monitoring
+
+- name: Install Grafana Agent
+  apt:
+    name: agent
+    state: present
+    update_cache: yes
+  become: yes
+  tags:
+    - grafana-agent
+    - monitoring
+
+- name: Create agent configuration directory
+  file:
+    path: /etc/agent
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+  tags:
+    - grafana-agent
+    - monitoring
+
+- name: Configure Grafana Agent
+  template:
+    src: grafana-agent-config.yml.j2
+    dest: /etc/agent/agent.yml
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  become: yes
+  notify: Restart Grafana Agent
+  tags:
+    - grafana-agent
+    - monitoring
+
+- name: Enable and start Grafana Agent
+  systemd:
+    name: grafana-agent
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  become: yes
+  tags:
+    - grafana-agent
+    - monitoring
+
+- name: Verify Grafana Agent service
+  shell: systemctl is-active grafana-agent
+  register: agent_status
+  changed_when: false
+  become: yes
+  tags:
+    - grafana-agent
+    - monitoring

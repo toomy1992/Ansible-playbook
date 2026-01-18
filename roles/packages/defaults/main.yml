@@ -1,0 +1,19 @@
+---
+# Packages role defaults
+
+packages_to_install:
+  - curl
+  - wget
+  - git
+  - vim
+  - htop
+  - net-tools
+  - tmux
+  - tree
+  - unzip
+  - build-essential
+  - software-properties-common
+
+optional_packages: []
+apt_upgrade_all: false
+apt_upgrade_type: safe

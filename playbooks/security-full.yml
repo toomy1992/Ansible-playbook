@@ -1,0 +1,56 @@
+---
+# Security roles playbook - All 4 security hardening roles
+
+- name: Apply Security Roles
+  hosts: all
+  pre_tasks:
+    - name: Gather facts
+      setup:
+      tags:
+        - always
+
+    - name: Log play start
+      debug:
+        msg: "Security hardening playbook started on {{ ansible_date_time.iso8601 }}"
+      tags:
+        - always
+
+  roles:
+    - role: apparmor
+      tags:
+        - security
+        - apparmor
+
+    - role: integrity_monitoring
+      tags:
+        - security
+        - integrity-monitoring
+
+    - role: malware_scanning
+      tags:
+        - security
+        - malware-scanning
+
+    - role: security_audits
+      tags:
+        - security
+        - security-audits
+
+  post_tasks:
+    - name: Log play completion
+      debug:
+        msg: "Security hardening completed on {{ ansible_date_time.iso8601 }}"
+      tags:
+        - always
+
+    - name: Display security status
+      debug:
+        msg: |
+          Security Deployment Complete
+          =============================
+          AppArmor Status: Check with 'aa-status'
+          OSSEC Status: Check /var/ossec/bin/agent_control -l
+          Maldet Status: Check /var/log/maldet-reports/
+          Lynis Status: Check /var/log/lynis-reports/
+      tags:
+        - always

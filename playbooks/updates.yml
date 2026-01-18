@@ -1,0 +1,19 @@
+---
+# Essential updates playbook - APT, packages, and system updates
+
+- name: Essential updates
+  hosts: all
+  gather_facts: yes
+
+  roles:
+    - role: apt
+      tags: [apt]
+    - role: packages
+      tags: [packages]
+    - role: updates
+      tags: [updates]
+
+  post_tasks:
+    - name: Updates complete
+      debug:
+        msg: "System updates applied to {{ inventory_hostname }}"

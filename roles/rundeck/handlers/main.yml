@@ -1,0 +1,8 @@
+---
+# Rundeck role handlers
+
+- name: Restart Rundeck
+  service:
+    name: rundeckd
+    state: restarted
+  become: yes

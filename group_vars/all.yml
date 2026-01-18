@@ -1,0 +1,527 @@
+---
+################################################################################
+# Comprehensive Group Variables for Ansible Framework
+# Location: group_vars/all.yml
+# 
+# This file contains all configurable variables for all 22 roles in the framework.
+# These defaults can be overridden at:
+#   1. Host level: host_vars/hostname.yml
+#   2. Group level: group_vars/groupname.yml
+#   3. Inventory: -e "variable=value"
+#
+# Organize by: Essentials → Apps → Security → Monitoring
+################################################################################
+
+################################################################################
+# LAYER 1: ESSENTIAL SERVICES (9 roles)
+################################################################################
+
+# ==================== APT Repository Management ====================
+# Role: apt
+# Manage system package repositories and GPG keys
+
+apt_repositories: []
+# Example:
+# apt_repositories:
+#   - "deb https://apt.docker.com/repo ubuntu-{{ ansible_distribution_release }} stable"
+
+apt_gpg_keys: []
+# Example:
+# apt_gpg_keys:
+#   - url: "https://download.docker.com/linux/ubuntu/gpg"
+#     id: "9DC858229FC7DD38854AE2D88D81803C0EBFCD88"
+
+# ==================== Package Management ====================
+# Role: packages
+# Install system packages and manage repositories
+
+packages_to_install:
+  - curl
+  - wget
+  - htop
+  - net-tools
+  - tmux
+  - tree
+  - unzip
+  - build-essential
+  - software-properties-common
+  - mc
+  - ncdu
+
+optional_packages: []
+# Example:
+# optional_packages:
+#   - nginx
+#   - postgresql-client
+
+apt_upgrade_all: false
+apt_upgrade_type: safe  # Options: safe, full, dist
+
+# ==================== User Accounts ====================
+# Role: user_accounts
+# Manage system users, groups, and sudo access (automation user - ansible)
+
+system_groups:
+  - name: ansible
+    gid: 1000
+# Example:
+# system_groups:
+#   - name: developers
+#     gid: 1001
+#   - name: operators
+#     gid: 1002
+
+user_accounts:
+  - name: ansible
+    uid: 1000
+    group: ansible
+    groups: sudo
+    shell: /bin/bash
+    home: /home/ansible
+    create_home: true
+    comment: "Automation user for Ansible playbooks"
+# Example:
+# user_accounts:
+#   - name: john
+#     uid: 1001
+#     group: developers
+#     shell: /bin/bash
+#     home: /home/john
+#     create_home: true
+
+sudo_users:
+  - username: ansible
+    nopasswd: true
+# Example:
+# sudo_users:
+#   - username: john
+#     nopasswd: false
+
+ssh_key_users: []
+# Example:
+# ssh_key_users:
+#   - username: john
+#     public_key: "ssh-rsa AAAA..."
+#     state: present
+
+# ==================== Operational Users ====================
+# Role: users_ops
+# Manage operational users with SSH keys from group_vars/users.yml
+# This role is separate to allow importing users from dedicated users.yml file
+
+ops_user_groups: []
+# Defined in: group_vars/users.yml
+
+ops_users: []
+# Defined in: group_vars/users.yml
+# Each user includes:
+#   - name: username
+#   - uid: user_id
+#   - group: primary_group
+#   - groups: [additional, groups]
+#   - ssh_keys: [list of SSH public keys]
+
+ops_sudo_users: []
+# Defined in: group_vars/users.yml
+
+# ==================== SSH Hardening ====================
+# Role: ssh
+# Secure SSH configuration with hardened defaults
+
+ssh_port: 22
+ssh_permit_root_login: 'no'
+ssh_pubkey_auth: 'yes'
+ssh_password_auth: 'no'
+ssh_permit_empty_passwords: 'no'
+ssh_x11_forwarding: 'no'
+ssh_max_auth_tries: 3
+ssh_client_alive_interval: 300
+ssh_client_alive_count_max: 2
+ssh_hardened_ciphers: true
+ssh_hardened_kex: true
+ssh_banner_enabled: false
+
+# ==================== System Timezone ====================
+# Role: timezone
+# Configure system timezone and NTP synchronization
+
+system_timezone: UTC
+ntp_package: chrony
+ntp_servers:
+  - 0.ubuntu.pool.ntp.org
+  - 1.ubuntu.pool.ntp.org
+  - 2.ubuntu.pool.ntp.org
+  - 3.ubuntu.pool.ntp.org
+
+# ==================== Hostname Configuration ====================
+# Role: hostname
+# Set system hostname and manage /etc/hosts
+
+system_hostname: null
+hosts_entries: []
+# Example:
+# hosts_entries:
+#   - ip: 192.168.1.10
+#     hostname: web1.example.com
+#   - ip: 192.168.1.20
+#     hostname: db1.example.com
+
+# ==================== UFW Firewall ====================
+# Role: firewall
+# Configure firewall rules using UFW (Uncomplicated Firewall)
+
+ssh_port: 22
+firewall_rules: []
+# Example:
+# firewall_rules:
+#   - rule: allow
+#     port: 22
+#     proto: tcp
+#   - rule: allow
+#     port: 80
+#     proto: tcp
+#   - rule: allow
+#     port: 443
+#     proto: tcp
+#   - rule: allow
+#     from_ip: 192.168.1.0/24
+#     port: 3306
+#     proto: tcp
+
+# ==================== Mail Configuration ====================
+# Role: mail
+# Install and configure Postfix mail service
+
+postfix_relayhost: null
+postfix_relayport: 587
+postfix_relay_user: null
+postfix_relay_password: null
+# For relayed mail, use vault for credentials:
+# postfix_relay_user: "{{ vault_postfix_relay_user }}"
+# postfix_relay_password: "{{ vault_postfix_relay_password }}"
+
+# ==================== Automatic Updates ====================
+# Role: updates
+# Configure unattended upgrades with automatic reboots
+
+unattended_upgrade_mail: root
+unattended_upgrade_auto_reboot: false
+unattended_upgrade_reboot_time: "02:00"
+
+################################################################################
+# LAYER 2: APPLICATION SERVICES (2 roles)
+################################################################################
+
+# ==================== Docker Container Engine ====================
+# Role: docker
+# Install and configure Docker CE with Compose
+
+docker_users: []
+# Example:
+# docker_users:
+#   - ansible
+#   - ubuntu
+
+docker_log_driver: json-file
+docker_log_max_size: 10m
+docker_log_max_file: 3
+docker_live_restore: true
+docker_userland_proxy: false
+docker_compose_install: true
+
+# ==================== Rundeck Runbook Automation ====================
+# Role: rundeck
+# Install and configure Rundeck for job orchestration
+
+# Rundeck server configuration
+rundeck_grails_url: http://localhost:4440
+rundeck_port: 4440
+rundeck_address: 127.0.0.1
+rundeck_context_path: /
+
+# Rundeck framework configuration
+rundeck_server_name: rundeck-server
+
+# User authentication
+rundeck_users: []
+# Example:
+# rundeck_users:
+#   - username: admin
+#     password: "{{ vault_rundeck_admin_password }}"
+#   - username: operator
+#     password: "{{ vault_rundeck_operator_password }}"
+
+# SSH key generation
+rundeck_ssh_key_generate: false
+
+# Additional configuration
+rundeck_execution_mode: active
+rundeck_loglevel: INFO
+
+################################################################################
+# LAYER 3: SECURITY HARDENING (4 roles)
+################################################################################
+
+# ==================== AppArmor MAC ====================
+# Role: apparmor
+# Configure AppArmor Mandatory Access Control policies
+
+apparmor_enabled: true
+apparmor_enforce_profiles: []
+# Example:
+# apparmor_enforce_profiles:
+#   - usr.bin.man
+#   - usr.sbin.tcpdump
+
+apparmor_complain_profiles: []
+# Example:
+# apparmor_complain_profiles:
+#   - usr.bin.test
+
+apparmor_custom_profiles: []
+# Example:
+# apparmor_custom_profiles:
+#   - name: myapp
+#     binary: /usr/bin/myapp
+
+# ==================== Integrity Monitoring (OSSEC) ====================
+# Role: integrity_monitoring
+# Deploy OSSEC for file integrity monitoring and intrusion detection
+
+ossec_version: 3.7.0
+ossec_email_notifications: false
+ossec_admin_email: "root"
+ossec_report_hour: 6
+ossec_report_minute: 0
+
+ossec_monitored_paths:
+  - /etc
+  - /bin
+  - /usr/bin
+  - /usr/sbin
+  - /root
+  - /home
+
+ossec_ignorepaths: []
+# Example:
+# ossec_ignorepaths:
+#   - /etc/letsencrypt
+#   - /var/log
+
+ossec_syscheck_interval: 3600
+ossec_syscheck_scan_on_start: "yes"
+ossec_syscheck_realtime: "yes"
+
+# ==================== Malware Scanning (Maldet) ====================
+# Role: malware_scanning
+# Deploy Maldet for malware detection and quarantine
+
+maldet_version: latest
+maldet_email_notifications: false
+maldet_admin_email: "root"
+maldet_scan_hour: 2
+maldet_scan_minute: 0
+maldet_update_hour: 0
+maldet_update_minute: 30
+
+maldet_scan_paths:
+  - /home
+  - /var/www
+  - /root
+
+maldet_quarantine_suspicious: true
+maldet_alert_on_detection: true
+
+# Scan options
+maldet_scan_timeout: 3600
+maldet_min_file_size: 100
+
+# ==================== Security Audits (Lynis) ====================
+# Role: security_audits
+# Run Lynis security hardening audits
+
+lynis_email_notifications: false
+lynis_admin_email: "root"
+lynis_audit_hour: 4
+lynis_audit_minute: 0
+
+lynis_auditor_name: "Security Team"
+lynis_report_title: "System Security Audit Report"
+lynis_quiet_mode: "0"
+lynis_deep_inspection: "0"
+
+lynis_audit_options: []
+# Example:
+# lynis_audit_options:
+#   - --quick
+#   - --quiet
+
+# Categories to audit
+lynis_audit_categories:
+  - boot_services
+  - file_permissions
+  - system_tools
+  - malware
+  - security_compliance
+
+################################################################################
+# LAYER 4: MONITORING STACK (7 roles)
+################################################################################
+
+# ==================== Log Rotation ====================
+# Role: log_rotation
+# Configure logrotate for system log management
+
+log_rotation_retention_days: 30
+log_rotation_max_age_days: 60
+log_rotation_max_size: 100M
+log_rotation_cron_hour: 3
+log_rotation_cron_minute: 0
+
+# Compress logs
+log_rotation_compress: true
+log_rotation_delaycompress: true
+
+# Log rotation modes
+log_rotation_daily: true
+log_rotation_weekly: false
+log_rotation_monthly: false
+
+# ==================== Loki Log Aggregation ====================
+# Role: loki
+# Deploy Grafana Loki for log aggregation
+
+loki_version: 2.9.0
+loki_retention_days: 30
+loki_storage_path: /var/lib/loki
+loki_http_port: 3100
+
+loki_auth_enabled: false
+loki_chunk_retain_period: 1m
+loki_chunk_idle_period: 15m
+loki_max_chunk_age: 1h
+
+loki_log_level: info
+
+# ==================== Prometheus Metrics ====================
+# Role: prometheus
+# Deploy Prometheus for metrics storage and queries
+
+prometheus_version: 2.48.0
+prometheus_port: 9090
+prometheus_scrape_interval: 15s
+prometheus_evaluation_interval: 15s
+prometheus_retention_time: 30d
+
+prometheus_enable_local_node_exporter: true
+prometheus_alert_rules_file: /etc/prometheus/alert.rules.yml
+
+# ==================== Grafana Agent ====================
+# Role: grafana_agent
+# Deploy Grafana Agent for log and metrics collection
+
+grafana_agent_version: latest
+loki_push_url: "http://localhost:3100/loki/api/v1/push"
+prometheus_push_url: "http://localhost:9090/api/v1/write"
+grafana_agent_log_level: info
+
+# Scrape configurations
+grafana_agent_scrape_interval: 15s
+grafana_agent_scrape_timeout: 10s
+
+# Metrics to collect
+grafana_agent_collect_node_metrics: true
+grafana_agent_collect_docker_metrics: false
+
+# ==================== Alertmanager ====================
+# Role: alertmanager
+# Deploy Prometheus Alertmanager for alert routing
+
+alertmanager_version: 0.26.0
+alertmanager_port: 9093
+alertmanager_log_level: info
+
+# Slack integration (optional)
+alertmanager_slack_enabled: false
+alertmanager_slack_webhook: ""
+alertmanager_slack_channel: "#alerts"
+
+# Email integration (optional)
+alertmanager_email_enabled: false
+alertmanager_email_from: "alertmanager@example.com"
+alertmanager_email_to: "admin@example.com"
+alertmanager_smtp_host: "localhost"
+alertmanager_smtp_port: 25
+
+# ==================== Monit Service Monitoring ====================
+# Role: monit
+# Deploy Monit for process and system monitoring
+
+monit_log_level: info
+monit_check_interval: 60
+monit_start_delay: 10
+
+# Web interface
+monit_web_port: 2812
+monit_web_user: ""
+monit_web_password: ""
+
+# System thresholds
+monit_load_threshold_1min: 4.0
+monit_load_threshold_5min: 3.0
+monit_memory_threshold: 80
+
+# Services to monitor
+monit_monitored_processes: []
+# Example:
+# monit_monitored_processes:
+#   - name: nginx
+#     pidfile: /var/run/nginx.pid
+#     start_cmd: /bin/systemctl start nginx
+#     stop_cmd: /bin/systemctl stop nginx
+#   - name: mysql
+#     pidfile: /var/run/mysqld/mysqld.pid
+#     start_cmd: /bin/systemctl start mysql
+#     stop_cmd: /bin/systemctl stop mysql
+
+# Filesystems to monitor
+monit_monitored_filesystems: []
+# Example:
+# monit_monitored_filesystems:
+#   - /home
+#   - /var
+
+# Alert settings
+monit_alert_email: "admin@example.com"
+monit_alert_enabled: true
+
+################################################################################
+# COMMON PATTERNS & BEST PRACTICES
+################################################################################
+
+# VAULT INTEGRATION:
+# For sensitive values, use Ansible Vault:
+#   ansible-vault encrypt_string 'my_secret' --name 'vault_variable_name'
+# Then reference: variable_name: "{{ vault_variable_name }}"
+
+# VARIABLE HIERARCHY (Override precedence):
+# 1. Command line: ansible-playbook -e "variable=value"
+# 2. Host variables: host_vars/hostname.yml
+# 3. Group variables: group_vars/groupname.yml (specific groups first)
+# 4. All variables: group_vars/all.yml (this file - lowest priority)
+# 5. Role defaults: roles/role_name/defaults/main.yml (lowest)
+
+# CUSTOMIZATION EXAMPLES:
+# For production servers:
+#   - Create: group_vars/production.yml
+#   - Set environment-specific values
+#   - Assign hosts to production group in inventory
+
+# For specific services:
+#   - Create: group_vars/webservers.yml
+#   - Override role variables as needed
+#   - Include only relevant roles in playbooks
+
+################################################################################
+# END OF GROUP VARIABLES
+################################################################################

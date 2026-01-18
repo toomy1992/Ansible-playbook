@@ -1,0 +1,30 @@
+---
+# User accounts role defaults
+
+system_groups: []
+# Example:
+# system_groups:
+#   - name: docker
+#     gid: 999
+#     system: true
+
+user_accounts: []
+# Example:
+# user_accounts:
+#   - username: ansible
+#     password: "{{ vault_ansible_password }}"
+#     shell: /bin/bash
+#     home: /home/ansible
+#     groups: [sudo, docker]
+
+sudo_users: []
+# Example:
+# sudo_users:
+#   - username: ansible
+#   - username: devops
+
+ssh_key_users: []
+# Example:
+# ssh_key_users:
+#   - username: ansible
+#     ssh_key: "ssh-rsa AAAA..."

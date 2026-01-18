@@ -1,0 +1,27 @@
+---
+# Rundeck role defaults
+
+# Rundeck server configuration
+rundeck_grails_url: http://localhost:4440
+rundeck_port: 4440
+rundeck_address: 127.0.0.1
+rundeck_context_path: /
+
+# Rundeck framework configuration
+rundeck_server_name: rundeck-server
+
+# User authentication
+rundeck_users: []
+# Example:
+# rundeck_users:
+#   - username: admin
+#     password: "{{ vault_rundeck_admin_password }}"
+#   - username: user
+#     password: "{{ vault_rundeck_user_password }}"
+
+# SSH key generation
+rundeck_ssh_key_generate: false
+
+# Additional configuration
+rundeck_execution_mode: active
+rundeck_loglevel: INFO

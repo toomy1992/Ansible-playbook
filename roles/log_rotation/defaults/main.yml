@@ -1,0 +1,17 @@
+---
+# Log Rotation defaults
+
+log_rotation_retention_days: 30
+log_rotation_max_age_days: 60
+log_rotation_max_size: 100M
+log_rotation_cron_hour: 3
+log_rotation_cron_minute: 0
+
+# Compress logs
+log_rotation_compress: true
+log_rotation_delaycompress: true
+
+# Log rotation modes
+log_rotation_daily: true
+log_rotation_weekly: false
+log_rotation_monthly: false

@@ -1,0 +1,62 @@
+---
+# Docker Hosts Configuration Playbook
+# Deploy essentials + Docker on docker_hosts group
+
+- name: Configure Docker hosts
+  hosts: docker_hosts
+  gather_facts: yes
+  
+  pre_tasks:
+    - name: Display docker host configuration
+      debug:
+        msg: "Configuring Docker host: {{ inventory_hostname }}"
+
+  roles:
+    - role: apt
+      tags: [apt]
+    - role: packages
+      tags: [packages]
+    - role: user_accounts
+      tags: [users]
+    - role: users_ops
+      tags: [users-ops]
+    - role: ssh
+      tags: [ssh]
+    - role: timezone
+      tags: [timezone]
+    - role: hostname
+      tags: [hostname]
+    - role: firewall
+      tags: [firewall]
+    - role: mail
+      tags: [mail]
+    - role: updates
+      tags: [updates]
+    - role: docker
+      tags: [docker]
+    - role: apparmor
+      tags: [apparmor, security]
+    - role: integrity_monitoring
+      tags: [integrity-monitoring, security]
+    - role: malware_scanning
+      tags: [malware-scanning, security]
+    - role: security_audits
+      tags: [security-audits, security]
+    - role: log_rotation
+      tags: [log-rotation, monitoring]
+    - role: loki
+      tags: [loki, monitoring]
+    - role: prometheus
+      tags: [prometheus, monitoring]
+    - role: grafana_agent
+      tags: [grafana-agent, monitoring]
+    - role: alertmanager
+      tags: [alertmanager, monitoring]
+    - role: monit
+      tags: [monit, monitoring]
+
+  post_tasks:
+    - name: Display Docker host completion
+      debug:
+        msg: "Docker host {{ inventory_hostname }} configured successfully"
+

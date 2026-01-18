@@ -1,0 +1,107 @@
+---
+# AppArmor role - Sets up AppArmor for process confinement
+
+- name: Install AppArmor packages
+  apt:
+    name:
+      - apparmor
+      - apparmor-utils
+      - apparmor-profiles
+      - apparmor-profiles-extra
+    state: present
+  become: yes
+  tags:
+    - apparmor
+
+- name: Enable AppArmor service
+  service:
+    name: apparmor
+    state: started
+    enabled: yes
+  become: yes
+  tags:
+    - apparmor
+
+- name: Configure AppArmor system parameters
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_set: yes
+  loop:
+    - { key: 'kernel.printk', value: '3 3 3 3' }
+    - { key: 'kernel.sysrq', value: '0' }
+  become: yes
+  tags:
+    - apparmor
+
+- name: Load AppArmor profiles
+  shell: |
+    apparmor_parser -r /etc/apparmor.d/* 2>/dev/null || true
+  become: yes
+  changed_when: false
+  tags:
+    - apparmor
+
+- name: Create custom AppArmor profiles
+  copy:
+    content: |
+      #include <tunables/global>
+      
+      profile {{ item.name }} flags=(attach_disconnected,mediate_deleted) {
+        #include <abstractions/base>
+        #include <abstractions/nameservice>
+        
+        capability setuid,
+        capability setgid,
+        capability dac_override,
+        capability dac_read_search,
+        
+        /usr/bin/{{ item.binary }} r,
+        /etc/{{ item.name }}/ r,
+        /var/{{ item.name }}/ rw,
+        /tmp/ rw,
+        /dev/null rw,
+        /dev/zero rw,
+        /dev/full rw,
+        /dev/random r,
+        /dev/urandom r,
+        
+        /proc/sys/kernel/osrelease r,
+        /proc/sys/kernel/hostname r,
+      }
+    dest: "/etc/apparmor.d/{{ item.name }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ apparmor_custom_profiles | default([]) }}"
+  become: yes
+  notify: Reload AppArmor profiles
+  tags:
+    - apparmor
+
+- name: Set AppArmor profile modes
+  shell: |
+    aa-enforce /etc/apparmor.d/{{ item }}
+  loop: "{{ apparmor_enforce_profiles | default([]) }}"
+  become: yes
+  changed_when: false
+  tags:
+    - apparmor
+
+- name: Set AppArmor profile to complain mode
+  shell: |
+    aa-complain /etc/apparmor.d/{{ item }}
+  loop: "{{ apparmor_complain_profiles | default([]) }}"
+  become: yes
+  changed_when: false
+  tags:
+    - apparmor
+
+- name: Verify AppArmor status
+  shell: aa-status
+  become: yes
+  register: apparmor_status
+  changed_when: false
+  tags:
+    - apparmor

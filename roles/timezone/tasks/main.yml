@@ -1,0 +1,60 @@
+---
+# Timezone role - Set timezone and NTP
+
+- name: Set system timezone
+  timezone:
+    name: "{{ system_timezone | default('UTC') }}"
+  become: yes
+  tags:
+    - timezone
+
+- name: Install NTP/chrony packages
+  apt:
+    name: "{{ ntp_package | default('chrony') }}"
+    state: present
+  become: yes
+  tags:
+    - timezone
+
+- name: Configure chrony NTP
+  block:
+    - name: Configure chrony servers
+      lineinfile:
+        path: /etc/chrony/chrony.conf
+        regexp: '^pool'
+        line: "pool {{ item }} iburst"
+        state: present
+      loop: "{{ ntp_servers | default(['0.ubuntu.pool.ntp.org', '1.ubuntu.pool.ntp.org', '2.ubuntu.pool.ntp.org', '3.ubuntu.pool.ntp.org']) }}"
+      become: yes
+      notify: Restart chrony
+
+    - name: Start and enable chrony service
+      service:
+        name: chrony
+        state: started
+        enabled: yes
+      become: yes
+  when: ntp_package | default('chrony') == 'chrony'
+  tags:
+    - timezone
+
+- name: Configure systemd-timesyncd NTP
+  block:
+    - name: Configure timesyncd NTP servers
+      lineinfile:
+        path: /etc/systemd/timesyncd.conf
+        regexp: '^NTP='
+        line: "NTP={{ ntp_servers | join(' ') }}"
+        state: present
+      become: yes
+      notify: Restart timesyncd
+
+    - name: Start and enable timesyncd service
+      service:
+        name: systemd-timesyncd
+        state: started
+        enabled: yes
+      become: yes
+  when: ntp_package | default('chrony') == 'systemd-timesyncd'
+  tags:
+    - timezone

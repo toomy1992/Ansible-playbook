@@ -1,0 +1,14 @@
+---
+# Timezone role handlers
+
+- name: Restart chrony
+  service:
+    name: chrony
+    state: restarted
+  become: yes
+
+- name: Restart timesyncd
+  service:
+    name: systemd-timesyncd
+    state: restarted
+  become: yes

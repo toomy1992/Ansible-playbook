@@ -1,0 +1,26 @@
+---
+# Security Audits (Lynis) defaults
+
+lynis_email_notifications: false
+lynis_admin_email: "root"
+lynis_audit_hour: 4
+lynis_audit_minute: 0
+
+lynis_auditor_name: "Security Team"
+lynis_report_title: "System Security Audit Report"
+lynis_quiet_mode: "0"
+lynis_deep_inspection: "0"
+
+lynis_audit_options: []
+# Example:
+# lynis_audit_options:
+#   - --quick
+#   - --quiet
+
+# Categories to audit
+lynis_audit_categories:
+  - boot_services
+  - file_permissions
+  - system_tools
+  - malware
+  - security_compliance

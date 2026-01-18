@@ -1,0 +1,7 @@
+---
+# Users Operations Handlers
+
+- name: Reload sudoers
+  ansible.builtin.command: /usr/sbin/visudo -c
+  listen: reload sudoers
+  tags: users_ops

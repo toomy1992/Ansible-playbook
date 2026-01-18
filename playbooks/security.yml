@@ -1,0 +1,24 @@
+---
+# Security hardening playbook - Focus on SSH and firewall
+
+- name: Security hardening
+  hosts: all
+  gather_facts: yes
+  
+  vars:
+    ssh_hardened_ciphers: true
+    ssh_hardened_kex: true
+    ssh_permit_root_login: 'no'
+    ssh_password_auth: 'no'
+    ssh_permit_empty_passwords: 'no'
+
+  roles:
+    - role: ssh
+      tags: [ssh]
+    - role: firewall
+      tags: [firewall]
+
+  post_tasks:
+    - name: Security hardening complete
+      debug:
+        msg: "Security hardening applied to {{ inventory_hostname }}"

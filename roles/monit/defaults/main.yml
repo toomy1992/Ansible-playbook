@@ -1,0 +1,40 @@
+---
+# Monit defaults
+
+monit_log_level: info
+monit_check_interval: 60
+monit_start_delay: 10
+
+# Web interface
+monit_web_port: 2812
+monit_web_user: ""
+monit_web_password: ""
+
+# System thresholds
+monit_load_threshold_1min: 4.0
+monit_load_threshold_5min: 3.0
+monit_memory_threshold: 80
+
+# Services to monitor
+monit_monitored_processes: []
+# Example:
+# monit_monitored_processes:
+#   - name: nginx
+#     pidfile: /var/run/nginx.pid
+#     start_cmd: /bin/systemctl start nginx
+#     stop_cmd: /bin/systemctl stop nginx
+#   - name: mysql
+#     pidfile: /var/run/mysqld/mysqld.pid
+#     start_cmd: /bin/systemctl start mysql
+#     stop_cmd: /bin/systemctl stop mysql
+
+# Filesystems to monitor
+monit_monitored_filesystems: []
+# Example:
+# monit_monitored_filesystems:
+#   - /home
+#   - /var
+
+# Alert settings
+monit_alert_email: "admin@example.com"
+monit_alert_enabled: true

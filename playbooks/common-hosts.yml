@@ -1,0 +1,60 @@
+---
+# Common Ubuntu Servers Configuration Playbook
+# Deploy essentials only on common_ubuntu group (NO Docker, NO Rundeck)
+
+- name: Configure common Ubuntu servers
+  hosts: common_ubuntu
+  gather_facts: yes
+  
+  pre_tasks:
+    - name: Display common host configuration
+      debug:
+        msg: "Configuring common Ubuntu host: {{ inventory_hostname }}"
+
+  roles:
+    - role: apt
+      tags: [apt]
+    - role: packages
+      tags: [packages]
+    - role: user_accounts
+      tags: [users]
+    - role: users_ops
+      tags: [users-ops]
+    - role: ssh
+      tags: [ssh]
+    - role: timezone
+      tags: [timezone]
+    - role: hostname
+      tags: [hostname]
+    - role: firewall
+      tags: [firewall]
+    - role: mail
+      tags: [mail]
+    - role: updates
+      tags: [updates]
+    - role: apparmor
+      tags: [apparmor, security]
+    - role: integrity_monitoring
+      tags: [integrity-monitoring, security]
+    - role: malware_scanning
+      tags: [malware-scanning, security]
+    - role: security_audits
+      tags: [security-audits, security]
+    - role: log_rotation
+      tags: [log-rotation, monitoring]
+    - role: loki
+      tags: [loki, monitoring]
+    - role: prometheus
+      tags: [prometheus, monitoring]
+    - role: grafana_agent
+      tags: [grafana-agent, monitoring]
+    - role: alertmanager
+      tags: [alertmanager, monitoring]
+    - role: monit
+      tags: [monit, monitoring]
+
+  post_tasks:
+    - name: Display common host completion
+      debug:
+        msg: "Common Ubuntu host {{ inventory_hostname }} configured successfully"
+

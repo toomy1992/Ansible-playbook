@@ -1,0 +1,68 @@
+---
+# Monitoring roles playbook - All 7 monitoring roles
+
+- name: Apply Monitoring Roles
+  hosts: all
+  pre_tasks:
+    - name: Gather facts
+      setup:
+      tags:
+        - always
+
+    - name: Log play start
+      debug:
+        msg: "Monitoring stack deployment started on {{ ansible_date_time.iso8601 }}"
+      tags:
+        - always
+
+  roles:
+    - role: log_rotation
+      tags:
+        - monitoring
+        - log-rotation
+
+    - role: loki
+      tags:
+        - monitoring
+        - loki
+
+    - role: prometheus
+      tags:
+        - monitoring
+        - prometheus
+
+    - role: grafana_agent
+      tags:
+        - monitoring
+        - grafana-agent
+
+    - role: alertmanager
+      tags:
+        - monitoring
+        - alertmanager
+
+    - role: monit
+      tags:
+        - monitoring
+        - monit
+
+  post_tasks:
+    - name: Log play completion
+      debug:
+        msg: "Monitoring stack deployment completed on {{ ansible_date_time.iso8601 }}"
+      tags:
+        - always
+
+    - name: Display monitoring status
+      debug:
+        msg: |
+          Monitoring Stack Deployment Complete
+          ======================================
+          Log Rotation: Active
+          Loki (Logs): http://localhost:3100 (metrics endpoint: /loki/api/v1/status/buildinfo)
+          Prometheus (Metrics): http://localhost:9090
+          Grafana Agent: Running (collects logs and metrics)
+          Alertmanager: http://localhost:9093
+          Monit (Service Monitor): http://localhost:2812
+      tags:
+        - always

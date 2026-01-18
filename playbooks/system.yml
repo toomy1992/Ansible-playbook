@@ -1,0 +1,17 @@
+---
+# System configuration playbook - Hostname, timezone, and hosts configuration
+
+- name: System configuration
+  hosts: all
+  gather_facts: yes
+
+  roles:
+    - role: hostname
+      tags: [hostname]
+    - role: timezone
+      tags: [timezone]
+
+  post_tasks:
+    - name: System configuration complete
+      debug:
+        msg: "System configuration applied to {{ inventory_hostname }}"

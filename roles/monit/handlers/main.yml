@@ -1,0 +1,12 @@
+---
+# Monit handlers
+
+- name: Restart Monit
+  systemd:
+    name: monit
+    state: restarted
+  become: yes
+
+- name: Reload Monit configuration
+  shell: monit reload
+  become: yes

@@ -1,0 +1,14 @@
+---
+# Loki defaults
+
+loki_version: 2.9.0
+loki_retention_days: 30
+loki_storage_path: /var/lib/loki
+loki_http_port: 3100
+
+loki_auth_enabled: false
+loki_chunk_retain_period: 1m
+loki_chunk_idle_period: 15m
+loki_max_chunk_age: 1h
+
+loki_log_level: info

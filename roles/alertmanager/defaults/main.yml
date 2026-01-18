@@ -1,0 +1,18 @@
+---
+# Alertmanager defaults
+
+alertmanager_version: 0.26.0
+alertmanager_port: 9093
+alertmanager_log_level: info
+
+# Slack integration (optional)
+alertmanager_slack_enabled: false
+alertmanager_slack_webhook: ""
+alertmanager_slack_channel: "#alerts"
+
+# Email integration (optional)
+alertmanager_email_enabled: false
+alertmanager_email_from: "alertmanager@example.com"
+alertmanager_email_to: "admin@example.com"
+alertmanager_smtp_host: "localhost"
+alertmanager_smtp_port: 25

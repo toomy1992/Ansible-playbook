@@ -1,0 +1,15 @@
+---
+# Grafana Agent defaults
+
+grafana_agent_version: latest
+loki_push_url: "http://localhost:3100/loki/api/v1/push"
+prometheus_push_url: "http://localhost:9090/api/v1/write"
+grafana_agent_log_level: info
+
+# Scrape configurations
+grafana_agent_scrape_interval: 15s
+grafana_agent_scrape_timeout: 10s
+
+# Metrics to collect
+grafana_agent_collect_node_metrics: true
+grafana_agent_collect_docker_metrics: false

@@ -1,0 +1,67 @@
+---
+# Updates role - Enable unattended upgrades
+
+- name: Install unattended-upgrades
+  apt:
+    name: unattended-upgrades
+    state: present
+  become: yes
+  tags:
+    - updates
+
+- name: Configure unattended-upgrades
+  lineinfile:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    regexp: "^//\\s*{{ item.key }}"
+    line: '{{ item.key }} "{{ item.value }}";'
+    state: present
+  loop:
+    - { key: 'Unattended-Upgrade::Allowed-Origins', value: '${distro_id}:${distro_codename}-security' }
+    - { key: 'Unattended-Upgrade::Package-Blacklist', value: '' }
+    - { key: 'Unattended-Upgrade::DevRelease', value: 'false' }
+    - { key: 'Unattended-Upgrade::AutoRebootWithUsers', value: 'false' }
+    - { key: 'Unattended-Upgrade::Mail', value: '{{ unattended_upgrade_mail | default("root") }}' }
+  become: yes
+  tags:
+    - updates
+
+- name: Enable automatic APT update configuration
+  lineinfile:
+    path: /etc/apt/apt.conf.d/20auto-upgrades
+    regexp: '^APT::Periodic::Update-Package-Lists'
+    line: 'APT::Periodic::Update-Package-Lists "1";'
+    state: present
+  become: yes
+  tags:
+    - updates
+
+- name: Configure unattended-upgrades scheduling
+  lineinfile:
+    path: /etc/apt/apt.conf.d/20auto-upgrades
+    regexp: '^APT::Periodic::Unattended-Upgrade'
+    line: 'APT::Periodic::Unattended-Upgrade "1";'
+    state: present
+  become: yes
+  tags:
+    - updates
+
+- name: Enable automatic system reboot if required
+  lineinfile:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    regexp: '^//\\s*Unattended-Upgrade::Automatic-Reboot'
+    line: 'Unattended-Upgrade::Automatic-Reboot "{{ unattended_upgrade_auto_reboot | default(false) | lower }}";'
+    state: present
+  become: yes
+  tags:
+    - updates
+
+- name: Set automatic reboot time (if enabled)
+  lineinfile:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    regexp: '^//\\s*Unattended-Upgrade::Automatic-Reboot-Time'
+    line: 'Unattended-Upgrade::Automatic-Reboot-Time "{{ unattended_upgrade_reboot_time | default("02:00") }}";'
+    state: present
+  when: unattended_upgrade_auto_reboot | default(false)
+  become: yes
+  tags:
+    - updates

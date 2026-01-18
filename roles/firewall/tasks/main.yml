@@ -1,0 +1,50 @@
+---
+# Firewall role - Configure UFW firewall rules
+
+- name: Install UFW
+  apt:
+    name: ufw
+    state: present
+  become: yes
+  tags:
+    - firewall
+
+- name: Configure default UFW policies
+  ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+    state: enabled
+  loop:
+    - { direction: 'incoming', policy: 'deny' }
+    - { direction: 'outgoing', policy: 'allow' }
+  become: yes
+  tags:
+    - firewall
+
+- name: Allow SSH access
+  ufw:
+    rule: allow
+    port: "{{ ssh_port | default('22') }}"
+    proto: tcp
+    comment: "Allow SSH access"
+  become: yes
+  tags:
+    - firewall
+
+- name: Configure firewall rules
+  ufw:
+    rule: "{{ item.rule }}"
+    port: "{{ item.port | default(omit) }}"
+    proto: "{{ item.proto | default('tcp') }}"
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ firewall_rules | default([]) }}"
+  become: yes
+  tags:
+    - firewall
+
+- name: Enable UFW
+  ufw:
+    state: enabled
+  become: yes
+  tags:
+    - firewall

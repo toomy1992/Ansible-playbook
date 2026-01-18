@@ -1,0 +1,50 @@
+---
+# User accounts role - Create users and set permissions
+
+- name: Create system groups
+  group:
+    name: "{{ item.name }}"
+    gid: "{{ item.gid | default(omit) }}"
+    state: present
+    system: "{{ item.system | default(false) }}"
+  loop: "{{ system_groups | default([]) }}"
+  become: yes
+  tags:
+    - users
+
+- name: Create user accounts
+  user:
+    name: "{{ item.username }}"
+    password: "{{ item.password | password_hash('sha512') if item.password is defined else '!' }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    home: "{{ item.home | default('/home/' + item.username) }}"
+    createhome: yes
+    groups: "{{ item.groups | default([]) }}"
+    append: yes
+    state: present
+  loop: "{{ user_accounts | default([]) }}"
+  become: yes
+  no_log: true
+  tags:
+    - users
+
+- name: Configure sudo access for users
+  lineinfile:
+    path: /etc/sudoers.d/{{ item.username }}
+    line: "{{ item.username }} ALL=(ALL) NOPASSWD:ALL"
+    create: yes
+    mode: '0440'
+  loop: "{{ sudo_users | default([]) }}"
+  become: yes
+  tags:
+    - users
+
+- name: Deploy SSH public keys for users
+  authorized_key:
+    user: "{{ item.username }}"
+    key: "{{ item.ssh_key }}"
+    state: present
+  loop: "{{ ssh_key_users | default([]) }}"
+  become: yes
+  tags:
+    - users

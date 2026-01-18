@@ -1,0 +1,15 @@
+---
+# Docker role defaults
+
+docker_users: []
+# Example:
+# docker_users:
+#   - ansible
+#   - ubuntu
+
+docker_log_driver: json-file
+docker_log_max_size: 10m
+docker_log_max_file: 3
+docker_live_restore: true
+docker_userland_proxy: false
+docker_compose_install: true

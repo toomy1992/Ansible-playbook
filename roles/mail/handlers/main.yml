@@ -1,0 +1,12 @@
+---
+# Mail role handlers
+
+- name: Restart Postfix
+  service:
+    name: postfix
+    state: restarted
+  become: yes
+
+- name: Update postfix sasl_passwd
+  shell: postmap /etc/postfix/sasl_passwd && postfix reload
+  become: yes

@@ -1,0 +1,11 @@
+---
+# Prometheus defaults
+
+prometheus_version: 2.48.0
+prometheus_port: 9090
+prometheus_scrape_interval: 15s
+prometheus_evaluation_interval: 15s
+prometheus_retention_time: 30d
+
+prometheus_enable_local_node_exporter: true
+prometheus_alert_rules_file: /etc/prometheus/alert.rules.yml

@@ -1,0 +1,6 @@
+---
+# Log Rotation handlers
+
+- name: Force logrotate
+  shell: /usr/sbin/logrotate -f /etc/logrotate.conf
+  become: yes

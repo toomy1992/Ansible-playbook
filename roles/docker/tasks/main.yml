@@ -1,0 +1,125 @@
+---
+# Docker role - Install and configure Docker
+
+- name: Install Docker prerequisites
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      - gnupg
+      - lsb-release
+    state: present
+  become: yes
+  tags:
+    - docker
+
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+  become: yes
+  tags:
+    - docker
+
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+  become: yes
+  tags:
+    - docker
+
+- name: Update APT cache after adding Docker repository
+  apt:
+    update_cache: yes
+  become: yes
+  tags:
+    - docker
+
+- name: Install Docker packages
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+  become: yes
+  tags:
+    - docker
+
+- name: Start and enable Docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
+  become: yes
+  tags:
+    - docker
+
+- name: Create docker group
+  group:
+    name: docker
+    state: present
+  become: yes
+  tags:
+    - docker
+
+- name: Add users to docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  loop: "{{ docker_users | default([]) }}"
+  become: yes
+  tags:
+    - docker
+
+- name: Configure Docker daemon
+  copy:
+    content: |
+      {
+        "log-driver": "{{ docker_log_driver | default('json-file') }}",
+        "log-opts": {
+          "max-size": "{{ docker_log_max_size | default('10m') }}",
+          "max-file": "{{ docker_log_max_file | default('3') }}"
+        },
+        "live-restore": {{ docker_live_restore | default('true') | lower }},
+        "userland-proxy": {{ docker_userland_proxy | default('false') | lower }}
+      }
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify: Restart Docker
+  tags:
+    - docker
+
+- name: Install Docker Compose
+  block:
+    - name: Get latest Docker Compose version
+      shell: curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d'"' -f4
+      register: docker_compose_version
+      changed_when: false
+      when: docker_compose_install | default(true)
+
+    - name: Install Docker Compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version.stdout }}/docker-compose-{{ ansible_system }}-{{ ansible_machine }}"
+        dest: /usr/local/bin/docker-compose
+        owner: root
+        group: root
+        mode: '0755'
+      become: yes
+      when: docker_compose_install | default(true) and docker_compose_version.stdout | length > 0
+  tags:
+    - docker
+
+- name: Verify Docker installation
+  command: docker --version
+  register: docker_version
+  changed_when: false
+  tags:
+    - docker

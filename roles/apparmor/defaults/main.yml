@@ -1,0 +1,20 @@
+---
+# AppArmor role defaults
+
+apparmor_enabled: true
+apparmor_enforce_profiles: []
+# Example:
+# apparmor_enforce_profiles:
+#   - usr.bin.man
+#   - usr.sbin.tcpdump
+
+apparmor_complain_profiles: []
+# Example:
+# apparmor_complain_profiles:
+#   - usr.bin.test
+
+apparmor_custom_profiles: []
+# Example:
+# apparmor_custom_profiles:
+#   - name: myapp
+#     binary: myapp

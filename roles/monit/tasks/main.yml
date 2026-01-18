@@ -1,0 +1,138 @@
+---
+# Monit role - Service monitoring and auto-restart
+
+- name: Install Monit
+  apt:
+    name: monit
+    state: present
+  become: yes
+  tags:
+    - monit
+    - monitoring
+
+- name: Create monit configuration directory
+  file:
+    path: /etc/monit/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+  tags:
+    - monit
+    - monitoring
+
+- name: Configure Monit daemon
+  template:
+    src: monitrc.j2
+    dest: /etc/monit/monitrc
+    owner: root
+    group: root
+    mode: '0600'
+    backup: yes
+  become: yes
+  notify: Restart Monit
+  tags:
+    - monit
+    - monitoring
+
+- name: Create service monitoring configs
+  copy:
+    content: |
+      check process sshd with pidfile /var/run/sshd.pid
+        start program = "/bin/systemctl start ssh"
+        stop program = "/bin/systemctl stop ssh"
+        if does not exist then exec "/bin/systemctl start ssh"
+        if failed port 22 protocol ssh then restart
+        if 5 restarts within 5 cycles then alert
+
+      check process systemd with pidfile /var/run/systemd/notify
+        start program = "/bin/systemctl start systemd-journald"
+        stop program = "/bin/systemctl stop systemd-journald"
+        if failed then alert
+
+      {% for process in monit_monitored_processes %}
+      check process {{ process.name }} with pidfile {{ process.pidfile }}
+        start program = "{{ process.start_cmd }}"
+        stop program = "{{ process.stop_cmd }}"
+        if failed then restart
+        if 5 restarts within 5 cycles then alert
+      {% endfor %}
+    dest: /etc/monit/conf.d/services
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify: Restart Monit
+  tags:
+    - monit
+    - monitoring
+
+- name: Create system monitoring config
+  copy:
+    content: |
+      check system hostname
+        if loadavg (1min) > {{ monit_load_threshold_1min }} then alert
+        if loadavg (5min) > {{ monit_load_threshold_5min }} then alert
+        if memory usage > {{ monit_memory_threshold }}% then alert
+        if swap usage > 50% then alert
+        if cpu usage (user) > 80% then alert
+        if cpu usage (system) > 30% then alert
+
+      check filesystem root with path /
+        if space usage > 80% then alert
+        if inode usage > 85% then alert
+
+      {% for mount_point in monit_monitored_filesystems | default([]) %}
+      check filesystem {{ mount_point | replace('/', '_') }} with path {{ mount_point }}
+        if space usage > 80% then alert
+        if inode usage > 85% then alert
+      {% endfor %}
+    dest: /etc/monit/conf.d/system
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify: Restart Monit
+  tags:
+    - monit
+    - monitoring
+
+- name: Enable Monit web interface
+  copy:
+    content: |
+      set httpd port {{ monit_web_port }}
+          use address localhost
+          allow localhost
+          allow 127.0.0.1
+          {% if monit_web_user %}
+          allow {{ monit_web_user }}:{{ monit_web_password }}
+          {% endif %}
+    dest: /etc/monit/conf.d/web
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify: Restart Monit
+  tags:
+    - monit
+    - monitoring
+
+- name: Enable and start Monit service
+  systemd:
+    name: monit
+    enabled: yes
+    state: started
+  become: yes
+  tags:
+    - monit
+    - monitoring
+
+- name: Verify Monit configuration
+  shell: monit -t
+  register: monit_syntax
+  changed_when: false
+  become: yes
+  tags:
+    - monit
+    - monitoring

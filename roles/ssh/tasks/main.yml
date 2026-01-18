@@ -1,0 +1,89 @@
+---
+# SSH role - Configure and harden SSH access
+
+- name: Install SSH server
+  apt:
+    name: openssh-server
+    state: present
+  become: yes
+  tags:
+    - ssh
+
+- name: Configure SSH daemon
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  loop:
+    - { regexp: '^#?Port', line: 'Port {{ ssh_port | default(22) }}' }
+    - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin {{ ssh_permit_root_login | default("no") }}' }
+    - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication {{ ssh_pubkey_auth | default("yes") }}' }
+    - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication {{ ssh_password_auth | default("no") }}' }
+    - { regexp: '^#?PermitEmptyPasswords', line: 'PermitEmptyPasswords {{ ssh_permit_empty_passwords | default("no") }}' }
+    - { regexp: '^#?X11Forwarding', line: 'X11Forwarding {{ ssh_x11_forwarding | default("no") }}' }
+    - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries {{ ssh_max_auth_tries | default(3) }}' }
+    - { regexp: '^#?ClientAliveInterval', line: 'ClientAliveInterval {{ ssh_client_alive_interval | default(300) }}' }
+  become: yes
+  notify: Restart SSH
+  tags:
+    - ssh
+
+- name: Harden SSH configuration
+  block:
+    - name: Disable SSH protocol 1
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^Protocol'
+        line: 'Protocol 2'
+        state: present
+      become: yes
+      notify: Restart SSH
+
+    - name: Set SSH ciphers
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^Ciphers'
+        line: 'Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com'
+        state: present
+      become: yes
+      notify: Restart SSH
+      when: ssh_hardened_ciphers | default(true)
+
+    - name: Set SSH key exchange algorithms
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^KexAlgorithms'
+        line: 'KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org'
+        state: present
+      become: yes
+      notify: Restart SSH
+      when: ssh_hardened_kex | default(true)
+  tags:
+    - ssh
+
+- name: SSH banner configuration
+  block:
+    - name: Create SSH banner file
+      copy:
+        content: |
+          Unauthorized access to this system is forbidden and will be prosecuted by law.
+          By accessing this system, you agree that your actions may be monitored and recorded.
+        dest: /etc/ssh/banner
+        owner: root
+        group: root
+        mode: '0644'
+      become: yes
+      when: ssh_banner_enabled | default(false)
+
+    - name: Enable SSH banner in sshd_config
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^Banner'
+        line: 'Banner /etc/ssh/banner'
+        state: present
+      become: yes
+      notify: Restart SSH
+      when: ssh_banner_enabled | default(false)
+  tags:
+    - ssh

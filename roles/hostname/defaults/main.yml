@@ -1,0 +1,11 @@
+---
+# Hostname role defaults
+
+system_hostname: null
+hosts_entries: []
+# Example:
+# hosts_entries:
+#   - ip: 192.168.1.10
+#     hostname: web1.example.com
+#   - ip: 192.168.1.20
+#     hostname: db1.example.com

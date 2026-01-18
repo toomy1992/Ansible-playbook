@@ -1,0 +1,154 @@
+---
+# Prometheus role - Metrics storage and querying
+
+- name: Install dependencies
+  apt:
+    name:
+      - curl
+      - wget
+    state: present
+  become: yes
+  tags:
+    - prometheus
+    - monitoring
+
+- name: Create prometheus system user
+  user:
+    name: prometheus
+    system: yes
+    shell: /usr/sbin/nologin
+    home: /var/lib/prometheus
+  become: yes
+  tags:
+    - prometheus
+    - monitoring
+
+- name: Create prometheus directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+  loop:
+    - /etc/prometheus
+    - /var/lib/prometheus
+    - /var/log/prometheus
+  become: yes
+  tags:
+    - prometheus
+    - monitoring
+
+- name: Download Prometheus binary
+  shell: |
+    cd /tmp
+    PROM_VERSION="{{ prometheus_version }}"
+    wget -q https://github.com/prometheus/prometheus/releases/download/v${PROM_VERSION}/prometheus-${PROM_VERSION}.linux-amd64.tar.gz
+    tar xzf prometheus-${PROM_VERSION}.linux-amd64.tar.gz
+    cp prometheus-${PROM_VERSION}.linux-amd64/prometheus /usr/local/bin/
+    cp prometheus-${PROM_VERSION}.linux-amd64/promtool /usr/local/bin/
+    chmod +x /usr/local/bin/prometheus /usr/local/bin/promtool
+  args:
+    creates: /usr/local/bin/prometheus
+  become: yes
+  tags:
+    - prometheus
+    - monitoring
+
+- name: Configure Prometheus
+  template:
+    src: prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    owner: prometheus
+    group: prometheus
+    mode: '0640'
+    backup: yes
+  become: yes
+  notify: Restart Prometheus
+  tags:
+    - prometheus
+    - monitoring
+
+- name: Create alert rules file
+  copy:
+    content: |
+      groups:
+        - name: system
+          interval: 30s
+          rules:
+            - alert: HighCPUUsage
+              expr: node_cpu_seconds_total > 0.8
+              for: 5m
+              annotations:
+                summary: "High CPU usage on {{ instance }}"
+            - alert: HighMemoryUsage
+              expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.2
+              for: 5m
+              annotations:
+                summary: "High memory usage on {{ instance }}"
+            - alert: DiskSpaceLow
+              expr: node_filesystem_avail_bytes / node_filesystem_size_bytes < 0.1
+              for: 5m
+              annotations:
+                summary: "Low disk space on {{ instance }}"
+    dest: /etc/prometheus/alert.rules.yml
+    owner: prometheus
+    group: prometheus
+    mode: '0640'
+  become: yes
+  notify: Restart Prometheus
+  tags:
+    - prometheus
+    - monitoring
+
+- name: Create Prometheus systemd service
+  copy:
+    content: |
+      [Unit]
+      Description=Prometheus Metrics Server
+      After=network.target
+
+      [Service]
+      Type=simple
+      User=prometheus
+      Group=prometheus
+      ExecStart=/usr/local/bin/prometheus \
+        --config.file=/etc/prometheus/prometheus.yml \
+        --storage.tsdb.path=/var/lib/prometheus \
+        --web.listen-address=0.0.0.0:{{ prometheus_port }}
+      Restart=on-failure
+      RestartSec=10
+      StandardOutput=journal
+      StandardError=journal
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/prometheus.service
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify: Restart Prometheus
+  tags:
+    - prometheus
+    - monitoring
+
+- name: Enable and start Prometheus service
+  systemd:
+    name: prometheus
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  become: yes
+  tags:
+    - prometheus
+    - monitoring
+
+- name: Verify Prometheus service
+  shell: curl -s http://localhost:{{ prometheus_port }}/-/healthy
+  register: prometheus_status
+  changed_when: false
+  become: yes
+  tags:
+    - prometheus
+    - monitoring

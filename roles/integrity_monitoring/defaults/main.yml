@@ -1,0 +1,26 @@
+---
+# Integrity Monitoring (OSSEC) defaults
+
+ossec_version: 3.7.0
+ossec_email_notifications: false
+ossec_admin_email: "root"
+ossec_report_hour: 6
+ossec_report_minute: 0
+
+ossec_monitored_paths:
+  - /etc
+  - /bin
+  - /usr/bin
+  - /usr/sbin
+  - /root
+  - /home
+
+ossec_ignorepaths: []
+# Example:
+# ossec_ignorepaths:
+#   - /etc/letsencrypt
+#   - /var/log
+
+ossec_syscheck_interval: 3600
+ossec_syscheck_scan_on_start: "yes"
+ossec_syscheck_realtime: "yes"

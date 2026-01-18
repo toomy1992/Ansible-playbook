@@ -1,0 +1,39 @@
+---
+# Hostname role - Set hostname and configure hosts
+
+- name: Set hostname
+  hostname:
+    name: "{{ system_hostname }}"
+    use: systemd
+  become: yes
+  when: system_hostname is defined
+  tags:
+    - hostname
+
+- name: Configure /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    regexp: "^127.0.0.1"
+    line: "127.0.0.1 localhost {{ system_hostname | default('localhost') }}"
+    state: present
+  become: yes
+  when: system_hostname is defined
+  tags:
+    - hostname
+
+- name: Configure additional hosts entries
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ item.ip }} {{ item.hostname }}"
+    state: present
+  loop: "{{ hosts_entries | default([]) }}"
+  become: yes
+  tags:
+    - hostname
+
+- name: Verify hostname resolution
+  shell: hostname && hostname -f
+  register: hostname_check
+  changed_when: false
+  tags:
+    - hostname

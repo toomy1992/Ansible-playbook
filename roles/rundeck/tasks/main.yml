@@ -1,0 +1,165 @@
+---
+# Rundeck role - Install and configure Rundeck (Debian/Ubuntu)
+
+- name: Install Java (required for Rundeck)
+  apt:
+    name:
+      - openjdk-11-jre-headless
+      - openjdk-11-jdk-headless
+    state: present
+  become: yes
+  tags:
+    - rundeck
+
+- name: Add Rundeck repository GPG key
+  apt_key:
+    url: https://repo.rundeck.org/pki/rundeck-repo.key
+    state: present
+  become: yes
+  tags:
+    - rundeck
+
+- name: Add Rundeck repository
+  apt_repository:
+    repo: "deb https://repo.rundeck.org/rundeck/deb/ focal main"
+    state: present
+  become: yes
+  tags:
+    - rundeck
+
+- name: Update APT cache
+  apt:
+    update_cache: yes
+  become: yes
+  tags:
+    - rundeck
+
+- name: Install Rundeck
+  apt:
+    name: rundeck
+    state: present
+  become: yes
+  environment:
+    RUNDECK_GRAILS_URL: "{{ rundeck_grails_url | default('http://localhost:4440') }}"
+  tags:
+    - rundeck
+
+- name: Configure Rundeck server properties
+  lineinfile:
+    path: /etc/rundeck/rundeck-config.properties
+    regexp: "^{{ item.key }}"
+    line: "{{ item.key }}={{ item.value }}"
+    state: present
+  loop:
+    - { key: 'grails.serverURL', value: "{{ rundeck_grails_url | default('http://localhost:4440') }}" }
+    - { key: 'server.servlet.context-path', value: "{{ rundeck_context_path | default('/') }}" }
+    - { key: 'server.port', value: "{{ rundeck_port | default(4440) }}" }
+    - { key: 'server.address', value: "{{ rundeck_address | default('127.0.0.1') }}" }
+  become: yes
+  notify: Restart Rundeck
+  tags:
+    - rundeck
+
+- name: Create Rundeck projects directory
+  file:
+    path: /var/rundeck/projects
+    owner: rundeck
+    group: rundeck
+    mode: '0755'
+    state: directory
+  become: yes
+  tags:
+    - rundeck
+
+- name: Create Rundeck logs directory
+  file:
+    path: /var/log/rundeck
+    owner: rundeck
+    group: rundeck
+    mode: '0755'
+    state: directory
+  become: yes
+  tags:
+    - rundeck
+
+- name: Configure Rundeck framework properties
+  lineinfile:
+    path: /etc/rundeck/framework.properties
+    regexp: "^{{ item.key }}"
+    line: "{{ item.key }}={{ item.value }}"
+    state: present
+  loop:
+    - { key: 'framework.server.name', value: "{{ ansible_hostname }}" }
+    - { key: 'framework.server.hostname', value: "{{ ansible_fqdn }}" }
+    - { key: 'framework.server.port', value: "{{ rundeck_port | default(4440) }}" }
+    - { key: 'framework.server.url', value: "{{ rundeck_grails_url | default('http://localhost:4440') }}" }
+  become: yes
+  notify: Restart Rundeck
+  tags:
+    - rundeck
+
+- name: Enable Rundeck service
+  service:
+    name: rundeckd
+    enabled: yes
+    state: started
+  become: yes
+  tags:
+    - rundeck
+
+- name: Wait for Rundeck to start
+  wait_for:
+    port: "{{ rundeck_port | default(4440) }}"
+    host: "{{ rundeck_address | default('127.0.0.1') }}"
+    timeout: 60
+  tags:
+    - rundeck
+
+- name: Configure Rundeck authentication
+  block:
+    - name: Create Rundeck users file
+      copy:
+        content: |
+          {% for user in rundeck_users %}
+          {{ user.username }}:{{ user.password | default('rundeck') }}
+          {% endfor %}
+        dest: /etc/rundeck/realm.properties
+        owner: rundeck
+        group: rundeck
+        mode: '0600'
+      become: yes
+      notify: Restart Rundeck
+      when: rundeck_users is defined and rundeck_users | length > 0
+  tags:
+    - rundeck
+
+- name: Configure Rundeck SSH key
+  block:
+    - name: Create Rundeck .ssh directory
+      file:
+        path: /var/lib/rundeck/.ssh
+        owner: rundeck
+        group: rundeck
+        mode: '0700'
+        state: directory
+      become: yes
+
+    - name: Generate Rundeck SSH key
+      command: ssh-keygen -t rsa -b 4096 -f /var/lib/rundeck/.ssh/id_rsa -N ""
+      become: yes
+      become_user: rundeck
+      args:
+        creates: /var/lib/rundeck/.ssh/id_rsa
+  when: rundeck_ssh_key_generate | default(false)
+  tags:
+    - rundeck
+
+- name: Verify Rundeck installation
+  uri:
+    url: "http://{{ rundeck_address | default('127.0.0.1') }}:{{ rundeck_port | default(4440) }}/api/1/system/info"
+    method: GET
+    status_code: 200
+  register: rundeck_verify
+  changed_when: false
+  tags:
+    - rundeck

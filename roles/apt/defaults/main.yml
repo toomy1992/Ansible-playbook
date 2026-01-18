@@ -1,0 +1,5 @@
+---
+# APT role defaults
+
+apt_repositories: []
+apt_gpg_keys: []

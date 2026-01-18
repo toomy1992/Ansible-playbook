@@ -1,0 +1,31 @@
+---
+# Users Operations role defaults
+
+# Operational user groups to create
+ops_user_groups: []
+# Example:
+# ops_user_groups:
+#   - name: operators
+#     gid: 1100
+
+# Operational users to create with SSH keys
+ops_users: []
+# Example:
+# ops_users:
+#   - name: tomek
+#     uid: 1100
+#     group: operators
+#     groups: [sudo, docker]
+#     shell: /bin/bash
+#     home: /home/tomek
+#     create_home: true
+#     comment: "Operations Manager"
+#     ssh_keys:
+#       - "ssh-ed25519 AAAA..."
+
+# Sudo access for operational users
+ops_sudo_users: []
+# Example:
+# ops_sudo_users:
+#   - username: tomek
+#     nopasswd: true

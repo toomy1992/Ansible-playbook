@@ -1,0 +1,230 @@
+---
+# Sample Ansible Inventory
+# Location: inventory/sample_inventory.yml
+#
+# This inventory defines different types of Ubuntu hosts with their respective roles
+# Adjust IP addresses, hostnames, and groups according to your environment
+
+all:
+  children:
+    # ==============================
+    # COMMON UBUNTU SERVERS
+    # ==============================
+    common_ubuntu:
+      description: "Basic Ubuntu servers with essentials only"
+      hosts:
+        common-01:
+          ansible_host: 192.168.1.100
+          ansible_user: ansible
+          ansible_port: 22
+        common-02:
+          ansible_host: 192.168.1.101
+          ansible_user: ansible
+          ansible_port: 22
+
+    # ==============================
+    # DOCKER HOSTS
+    # ==============================
+    docker_hosts:
+      description: "Ubuntu servers with Docker and container orchestration"
+      hosts:
+        docker-01:
+          ansible_host: 192.168.1.110
+          ansible_user: ansible
+          ansible_port: 22
+          docker_users:
+            - ansible
+            - tomek
+        docker-02:
+          ansible_host: 192.168.1.111
+          ansible_user: ansible
+          ansible_port: 22
+          docker_users:
+            - ansible
+
+    # ==============================
+    # RUNDECK HOSTS
+    # ==============================
+    rundeck_hosts:
+      description: "Ubuntu servers with Rundeck for job orchestration"
+      hosts:
+        rundeck-01:
+          ansible_host: 192.168.1.120
+          ansible_user: ansible
+          ansible_port: 22
+          rundeck_port: 4440
+          rundeck_grails_url: "http://rundeck-01.example.com:4440"
+        rundeck-02:
+          ansible_host: 192.168.1.121
+          ansible_user: ansible
+          ansible_port: 22
+          rundeck_port: 4440
+          rundeck_grails_url: "http://rundeck-02.example.com:4440"
+
+    # ==============================
+    # UBUNTU DESKTOP WORKSTATIONS
+    # ==============================
+    ubuntu_desktop:
+      description: "Ubuntu desktop workstations for users"
+      hosts:
+        desktop-01:
+          ansible_host: 192.168.1.200
+          ansible_user: ansible
+          ansible_port: 22
+          desktop_user: tomek
+        desktop-02:
+          ansible_host: 192.168.1.201
+          ansible_user: ansible
+          ansible_port: 22
+          desktop_user: alice
+
+  # ==============================
+  # GROUP VARIABLES
+  # ==============================
+  vars:
+    # Default Ansible connection settings
+    ansible_python_interpreter: /usr/bin/python3
+    ansible_connection: ssh
+    ansible_become: true
+    ansible_become_method: sudo
+
+  # ==============================
+  # GROUP-SPECIFIC OVERRIDES
+  # ==============================
+  groupvars:
+    common_ubuntu:
+      # Deploy essentials only (no docker, no rundeck)
+      deploy_apps: false
+    
+    docker_hosts:
+      # Deploy essentials + docker
+      deploy_apps: true
+      docker_enabled: true
+      rundeck_enabled: false
+    
+    rundeck_hosts:
+      # Deploy essentials + rundeck (NO docker)
+      deploy_apps: true
+      docker_enabled: false
+      rundeck_enabled: true
+    
+    ubuntu_desktop:
+      # Desktop configuration with essentials and docker for local use
+      deploy_apps: true
+      docker_enabled: true
+      rundeck_enabled: false
+      # Desktop-specific settings
+      packages_to_install:
+        - curl
+        - wget
+        - git
+        - vim
+        - htop
+        - net-tools
+        - tmux
+        - tree
+        - unzip
+        - build-essential
+        - software-properties-common
+        - gnome-terminal
+        - nautilus
+        - firefox
+        - code
+        - wine
+
+################################################################################
+# USAGE EXAMPLES
+################################################################################
+
+# Deploy to all hosts:
+#   ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
+#
+# Deploy only to common ubuntu servers:
+#   ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml -l common_ubuntu
+#
+# Deploy only to docker hosts:
+#   ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml -l docker_hosts
+#
+# Deploy only to rundeck hosts:
+#   ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml -l rundeck_hosts
+#
+# Deploy only to desktops:
+#   ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml -l ubuntu_desktop
+#
+# Test run (dry-run):
+#   ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml --check
+#
+# Get host inventory:
+#   ansible-inventory -i inventory/sample_inventory.yml --list
+#
+# Get specific group:
+#   ansible-inventory -i inventory/sample_inventory.yml --host docker-01
+
+################################################################################
+# INVENTORY STRUCTURE
+################################################################################
+
+# Groups explained:
+#
+# common_ubuntu
+#   - Basic server setup
+#   - Essentials only (apt, packages, users, ssh, timezone, hostname, firewall, mail, updates)
+#   - No container orchestration
+#   - Use case: Database servers, utility servers, logging servers
+#
+# docker_hosts
+#   - Full server with container support
+#   - Essentials + Docker CE + Docker Compose
+#   - Ideal for containerized applications
+#   - Use case: App servers, microservices, container platforms
+#
+# rundeck_hosts
+#   - Job orchestration and automation platform
+#   - Essentials + Rundeck
+#   - NO Docker (separate from docker_hosts)
+#   - Use case: Orchestration server, automation platform
+#
+# ubuntu_desktop
+#   - User workstations with desktop environment
+#   - Essentials + Docker for local development
+#   - Ansible user + operational users
+#   - Use case: Developer machines, desktop workstations
+
+################################################################################
+# SECURITY NOTES
+################################################################################
+
+# 1. SSH Keys:
+#    - Each host requires SSH key authentication
+#    - Add your SSH public key to group_vars/users.yml
+#
+# 2. Ansible User:
+#    - Created automatically by user_accounts role
+#    - Has passwordless sudo access
+#    - Can run Ansible playbooks
+#
+# 3. Vault:
+#    - Encrypt sensitive data in group_vars/vault.yml
+#    - Use: ansible-playbook -i inventory/sample_inventory.yml --ask-vault-pass
+#
+# 4. Network Security:
+#    - Update IP addresses to match your network
+#    - Configure firewall rules via firewall_rules variable
+#    - Use VPN or secure network for Ansible control
+
+################################################################################
+# CONNECTION TESTING
+################################################################################
+
+# Test connectivity to all hosts:
+#   ansible all -i inventory/sample_inventory.yml -m ping
+#
+# Test connectivity to docker hosts:
+#   ansible docker_hosts -i inventory/sample_inventory.yml -m ping
+#
+# Get facts from a specific host:
+#   ansible docker-01 -i inventory/sample_inventory.yml -m setup | less
+#
+# Run adhoc command on all hosts:
+#   ansible all -i inventory/sample_inventory.yml -m command -a "uptime"
+

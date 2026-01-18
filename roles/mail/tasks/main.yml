@@ -1,0 +1,79 @@
+---
+# Mail role - Set up Postfix for notification sending
+
+- name: Install Postfix
+  apt:
+    name: postfix
+    state: present
+  become: yes
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  tags:
+    - mail
+
+- name: Configure Postfix for local delivery
+  lineinfile:
+    path: /etc/postfix/main.cf
+    regexp: "^{{ item.key }}"
+    line: "{{ item.key }} = {{ item.value }}"
+    state: present
+  loop:
+    - { key: 'myhostname', value: "{{ system_hostname | default(ansible_fqdn) }}" }
+    - { key: 'myorigin', value: "$myhostname" }
+    - { key: 'mydestination', value: "$myhostname, localhost.localdomain, localhost, localhost.localdomain" }
+    - { key: 'mynetworks', value: "127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128" }
+    - { key: 'inet_interfaces', value: "loopback-only" }
+    - { key: 'relayhost', value: "{{ postfix_relayhost | default('') }}" }
+  become: yes
+  notify: Restart Postfix
+  tags:
+    - mail
+
+- name: Configure Postfix authentication (if relayhost defined)
+  block:
+    - name: Create Postfix SASL password file
+      lineinfile:
+        path: /etc/postfix/sasl_passwd
+        line: "[{{ postfix_relayhost }}]:{{ postfix_relayport | default(587) }} {{ postfix_relay_user }}:{{ postfix_relay_password }}"
+        create: yes
+        owner: root
+        group: root
+        mode: '0600'
+      become: yes
+      no_log: true
+      notify: Update postfix sasl_passwd
+
+    - name: Configure Postfix SASL settings
+      lineinfile:
+        path: /etc/postfix/main.cf
+        regexp: "^{{ item.key }}"
+        line: "{{ item.key }} = {{ item.value }}"
+        state: present
+      loop:
+        - { key: 'smtp_sasl_auth_enable', value: 'yes' }
+        - { key: 'smtp_sasl_security_options', value: 'noanonymous' }
+        - { key: 'smtp_sasl_password_maps', value: 'hash:/etc/postfix/sasl_passwd' }
+        - { key: 'smtp_tls_security_level', value: 'encrypt' }
+        - { key: 'header_size_limit', value: '4096000' }
+      become: yes
+      notify: Restart Postfix
+  when: postfix_relayhost is defined
+  tags:
+    - mail
+
+- name: Start and enable Postfix service
+  service:
+    name: postfix
+    state: started
+    enabled: yes
+  become: yes
+  tags:
+    - mail
+
+- name: Test Postfix configuration
+  command: postfix check
+  become: yes
+  register: postfix_check
+  changed_when: false
+  tags:
+    - mail

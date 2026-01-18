@@ -1,0 +1,32 @@
+---
+# APT role - Configure repositories and update packages
+
+- name: Configure APT repositories
+  block:
+    - name: Update APT cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      become: yes
+
+    - name: Add Ubuntu repositories
+      apt_repository:
+        repo: "{{ item }}"
+        state: present
+      loop: "{{ apt_repositories | default([]) }}"
+      become: yes
+      when: apt_repositories is defined
+
+    - name: Add GPG keys for repositories
+      apt_key:
+        url: "{{ item }}"
+        state: present
+      loop: "{{ apt_gpg_keys | default([]) }}"
+      become: yes
+      when: apt_gpg_keys is defined
+
+- name: Install Python apt library
+  apt:
+    name: python3-apt
+    state: present
+  become: yes

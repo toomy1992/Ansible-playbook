@@ -1,0 +1,6 @@
+---
+# Updates role defaults
+
+unattended_upgrade_mail: root
+unattended_upgrade_auto_reboot: false
+unattended_upgrade_reboot_time: "02:00"

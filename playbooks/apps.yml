@@ -1,0 +1,17 @@
+---
+# Apps and Services playbook - Install Docker and Rundeck
+
+- name: Install apps and services
+  hosts: all
+  gather_facts: yes
+
+  roles:
+    - role: docker
+      tags: [docker]
+    - role: rundeck
+      tags: [rundeck]
+
+  post_tasks:
+    - name: Apps and services installation complete
+      debug:
+        msg: "Docker and Rundeck installed on {{ inventory_hostname }}"

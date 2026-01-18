@@ -1,0 +1,12 @@
+---
+# Mail role defaults
+
+postfix_relayhost: null
+postfix_relayport: 587
+postfix_relay_user: null
+postfix_relay_password: null
+# Example of usage with vault:
+# postfix_relayhost: smtp.gmail.com
+# postfix_relayport: 587
+# postfix_relay_user: "{{ vault_postfix_relay_user }}"
+# postfix_relay_password: "{{ vault_postfix_relay_password }}"

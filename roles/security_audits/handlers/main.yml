@@ -1,0 +1,6 @@
+---
+# Security Audits (Lynis) handlers
+
+- name: Update Lynis database
+  shell: /usr/sbin/lynis update info
+  become: yes

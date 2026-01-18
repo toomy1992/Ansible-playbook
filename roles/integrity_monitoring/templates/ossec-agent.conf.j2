@@ -1,0 +1,54 @@
+<!-- OSSEC Agent Configuration -->
+<ossec_config>
+  <client>
+    <server-ip>{{ ossec_server_ip | default('127.0.0.1') }}</server-ip>
+    <server-port>{{ ossec_server_port | default(1514) }}</server-port>
+    <config-profile>ubuntu</config-profile>
+  </client>
+
+  <syscheck>
+    <frequency>{{ ossec_syscheck_interval }}</frequency>
+    <scan_on_start>{{ ossec_syscheck_scan_on_start }}</scan_on_start>
+    <realtime>{{ ossec_syscheck_realtime }}</realtime>
+
+    {% for path in ossec_monitored_paths %}
+    <directories check_all="yes">{{ path }}</directories>
+    {% endfor %}
+
+    {% for path in ossec_ignorepaths %}
+    <ignore>{{ path }}</ignore>
+    {% endfor %}
+
+    <!-- Global checksums -->
+    <ignore>/proc</ignore>
+    <ignore>/sys</ignore>
+    <ignore>/dev</ignore>
+    <ignore>/tmp</ignore>
+    <ignore>/var/tmp</ignore>
+  </syscheck>
+
+  <rootcheck>
+    <rootkit_files>./etc/shared/rootkit_files.txt</rootkit_files>
+    <rootkit_trojans>./etc/shared/rootkit_trojans.txt</rootkit_trojans>
+    <system_audit>./etc/shared/system_audit_ubuntu.txt</system_audit>
+    <system_audit>./etc/shared/system_audit_rhel.txt</system_audit>
+  </rootcheck>
+
+  <localfile>
+    <log_format>syslog</log_format>
+    <location>/var/log/auth.log</location>
+  </localfile>
+
+  <localfile>
+    <log_format>syslog</log_format>
+    <location>/var/log/syslog</location>
+  </localfile>
+
+  <localfile>
+    <log_format>syslog</log_format>
+    <location>/var/log/secure</location>
+  </localfile>
+
+  <alert_level>3</alert_level>
+  <email_notification>no</email_notification>
+</ossec_config>

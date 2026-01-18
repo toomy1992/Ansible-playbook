@@ -1,0 +1,29 @@
+---
+# Packages role - Install essential packages
+
+- name: Install essential packages
+  apt:
+    name: "{{ packages_to_install }}"
+    state: present
+    update_cache: yes
+  become: yes
+  tags:
+    - packages
+
+- name: Install optional packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ optional_packages | default([]) }}"
+  become: yes
+  when: optional_packages is defined
+  tags:
+    - packages
+
+- name: Upgrade all packages
+  apt:
+    upgrade: "{{ apt_upgrade_type | default('safe') }}"
+  become: yes
+  when: apt_upgrade_all | default(false)
+  tags:
+    - packages

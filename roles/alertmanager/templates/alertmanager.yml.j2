@@ -1,0 +1,56 @@
+global:
+  resolve_timeout: 5m
+  {% if alertmanager_email_enabled %}
+  smtp_smarthost: '{{ alertmanager_smtp_host }}:{{ alertmanager_smtp_port }}'
+  smtp_from: '{{ alertmanager_email_from }}'
+  {% endif %}
+
+route:
+  receiver: 'default'
+  repeat_interval: 12h
+  routes:
+    - match:
+        severity: critical
+      receiver: 'critical'
+      repeat_interval: 1h
+    - match:
+        severity: warning
+      receiver: 'warning'
+      repeat_interval: 6h
+
+receivers:
+  - name: 'default'
+    {% if alertmanager_email_enabled %}
+    email_configs:
+      - to: '{{ alertmanager_email_to }}'
+    {% endif %}
+
+  - name: 'critical'
+    {% if alertmanager_slack_enabled %}
+    slack_configs:
+      - api_url: '{{ alertmanager_slack_webhook }}'
+        channel: '{{ alertmanager_slack_channel }}'
+        title: 'Critical Alert'
+        text: '{{ "{{ .GroupLabels.alertname }}" }}'
+    {% endif %}
+    {% if alertmanager_email_enabled %}
+    email_configs:
+      - to: '{{ alertmanager_email_to }}'
+        headers:
+          Subject: 'CRITICAL: {{ "{{ .GroupLabels.alertname }}" }}'
+    {% endif %}
+
+  - name: 'warning'
+    {% if alertmanager_email_enabled %}
+    email_configs:
+      - to: '{{ alertmanager_email_to }}'
+        headers:
+          Subject: 'WARNING: {{ "{{ .GroupLabels.alertname }}" }}'
+    {% endif %}
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['instance', 'alertname']

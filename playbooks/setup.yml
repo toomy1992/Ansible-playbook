@@ -1,0 +1,122 @@
+---
+# Setup/Startup Playbook
+# Location: playbooks/setup.yml
+#
+# Purpose: Initialize fresh Ubuntu VMs for Ansible automation
+# Run this FIRST on any new VM before deploying other playbooks
+#
+# This playbook:
+# 1. Creates the 'ansible' automation user with passwordless sudo
+# 2. Sets up SSH key-only login for 'tomek' user (installed during OS setup)
+# 3. Hardens SSH configuration
+# 4. Disables password authentication
+#
+# USAGE:
+# First time setup (VM has only 'tomek' user with password):
+#   ansible-playbook playbooks/setup.yml -i inventory/sample_inventory.yml \
+#     -u tomek -k --ask-become-pass
+#
+# Notes:
+#   -u tomek              : Connect as tomek user (initial VM user)
+#   -k                    : Ask for tomek password
+#   --ask-become-pass     : Ask for sudo password
+#
+# After this playbook succeeds, you can use:
+#   ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
+
+- name: Initialize fresh Ubuntu VM
+  hosts: all
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Display setup information
+      debug:
+        msg: |
+          ============================================
+          INITIALIZING FRESH UBUNTU VM
+          ============================================
+          Host: {{ inventory_hostname }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Current User: {{ ansible_user_id }}
+          ============================================
+
+    - name: Verify running as sudo-capable user
+      assert:
+        that:
+          - ansible_user_id in ['tomek', 'root'] or 'sudo' in ansible_user_id
+        fail_msg: "This playbook must run as 'tomek' or a sudo-capable user"
+      become: no
+
+  roles:
+    # Step 1: Create automation user (ansible)
+    - role: user_accounts
+      tags: [setup, users]
+      vars:
+        system_groups:
+          - name: ansible
+            gid: 1000
+        user_accounts:
+          - name: ansible
+            uid: 1000
+            group: ansible
+            groups: [sudo]
+            shell: /bin/bash
+            home: /home/ansible
+            create_home: true
+            comment: "Automation user for Ansible playbooks"
+        sudo_users:
+          - username: ansible
+            nopasswd: true
+
+    # Step 2: Set up SSH keys for operational users (tomek + others)
+    - role: users_ops
+      tags: [setup, users-ops]
+
+    # Step 3: Harden SSH configuration
+    - role: ssh
+      tags: [setup, ssh]
+      vars:
+        ssh_permit_root_login: 'no'
+        ssh_pubkey_auth: 'yes'
+        ssh_password_auth: 'no'
+        ssh_permit_empty_passwords: 'no'
+        ssh_hardened_ciphers: true
+        ssh_hardened_kex: true
+
+  post_tasks:
+    - name: Display setup completion
+      debug:
+        msg: |
+          ============================================
+          VM SETUP COMPLETE
+          ============================================
+          
+          Next steps:
+          1. Add your SSH key to group_vars/users.yml if not already done
+          2. Run the main playbook:
+             ansible-playbook playbooks/site.yml \
+               -i inventory/sample_inventory.yml
+          
+          Connection info:
+          - Automation user: ansible (passwordless sudo)
+          - SSH: Key-only (password auth disabled)
+          - Default playbook user: ansible
+          ============================================
+
+    - name: Test ansible user connection
+      block:
+        - name: Create test file as ansible user
+          ansible.builtin.file:
+            path: /tmp/ansible-setup-test
+            state: touch
+          become: yes
+          become_user: ansible
+          register: ansible_test
+
+        - name: Verify ansible user works
+          debug:
+            msg: "✓ Ansible user successfully created and configured"
+          when: ansible_test is succeeded
+      ignore_errors: yes
+      tags: [setup, verify]
+

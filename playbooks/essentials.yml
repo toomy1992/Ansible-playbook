@@ -1,0 +1,34 @@
+---
+# Essentials configuration playbook
+
+- name: Configure system essentials
+  hosts: all
+  gather_facts: yes
+
+  roles:
+    - role: apt
+      tags: [apt]
+    - role: packages
+      tags: [packages]
+    - role: user_accounts
+      tags: [users]
+    - role: users_ops
+      tags: [users-ops]
+    - role: ssh
+      tags: [ssh]
+    - role: timezone
+      tags: [timezone]
+    - role: hostname
+      tags: [hostname]
+    - role: firewall
+      tags: [firewall]
+    - role: mail
+      tags: [mail]
+    - role: updates
+      tags: [updates]
+
+  post_tasks:
+    - name: Essentials configuration complete
+      debug:
+        msg: "System essentials configured on {{ inventory_hostname }}"
+

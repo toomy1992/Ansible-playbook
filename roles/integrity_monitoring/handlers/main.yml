@@ -1,0 +1,12 @@
+---
+# Integrity Monitoring (OSSEC) handlers
+
+- name: Restart OSSEC
+  service:
+    name: ossec
+    state: restarted
+  become: yes
+
+- name: Reload OSSEC configuration
+  shell: /var/ossec/bin/ossec-control signal hup
+  become: yes
