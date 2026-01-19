@@ -21,8 +21,8 @@ cat ~/.ssh/id_ed25519.pub
 # Ping the VM
 ping 192.168.1.100
 
-# Test SSH connection with password (as tomek)
-ssh -v tomek@192.168.1.100
+# Test SSH connection with password (as John)
+ssh -v John@192.168.1.100
 
 ################################################################################
 # STEP 2: RUN SETUP PLAYBOOK
@@ -35,13 +35,13 @@ cd ~/path/to/Ansible-playbook
 # This creates ansible user, sets up SSH keys, hardens SSH
 ansible-playbook playbooks/setup.yml \
   -i inventory/sample_inventory.yml \
-  -u tomek \
+  -u John \
   -k \
   --ask-become-pass
 
 # What this does:
 # - Creates 'ansible' user with passwordless sudo
-# - Adds your SSH public key to tomek account
+# - Adds your SSH public key to John account
 # - Disables password authentication
 # - Hardens SSH configuration
 # - Creates 'operators' group
@@ -90,7 +90,7 @@ ssh -i ~/.ssh/id_ed25519 ansible@192.168.1.100 'sudo sshd -T | grep -E "password
 # View setup playbook output in detail
 ansible-playbook playbooks/setup.yml \
   -i inventory/sample_inventory.yml \
-  -u tomek \
+  -u John \
   -k \
   --ask-become-pass \
   -vvv
@@ -115,12 +115,12 @@ ansible-vault view group_vars/vault.yml
 
 # After setup.yml runs successfully:
 # ✓ ansible user created (uid 1000)
-# ✓ tomek user has SSH key auth only
+# ✓ John user has SSH key auth only
 # ✓ SSH password auth disabled
 # ✓ Ready for full deployment via site.yml
 
 # Initial Setup (uses passwords):
-#   ansible-playbook setup.yml -u tomek -k --ask-become-pass
+#   ansible-playbook setup.yml -u John -k --ask-become-pass
 
 # Subsequent Runs (uses SSH keys):
 #   ansible-playbook site.yml
@@ -131,7 +131,7 @@ ansible-vault view group_vars/vault.yml
 
 # 1. Add your SSH public key:
 #    nano group_vars/users.yml
-#    → ops_users[0].ssh_keys[0]: "ssh-ed25519 AAAA... tomek@workstation"
+#    → ops_users[0].ssh_keys[0]: "ssh-ed25519 AAAA... John@workstation"
 
 # 2. Update inventory with your VM IP:
 #    nano inventory/sample_inventory.yml

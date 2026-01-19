@@ -34,7 +34,7 @@ all:
           ansible_port: 22
           docker_users:
             - ansible
-            - tomek
+            - John
         docker-02:
           ansible_host: 192.168.1.111
           ansible_user: ansible
@@ -71,7 +71,7 @@ all:
           ansible_host: 192.168.1.200
           ansible_user: ansible
           ansible_port: 22
-          desktop_user: tomek
+          desktop_user: John
         desktop-02:
           ansible_host: 192.168.1.201
           ansible_user: ansible

@@ -55,9 +55,9 @@ Use this checklist before running any playbooks to ensure everything is ready.
   sudo ufw allow 22/tcp
   ```
 
-- [ ] **User 'tomek' Exists**
+- [ ] **User 'John' Exists**
   ```bash
-  id tomek
+  id John
   # Should return user info
   ```
 
@@ -86,7 +86,7 @@ Use this checklist before running any playbooks to ensure everything is ready.
 
 - [ ] **group_vars/users.yml Updated**
   - [ ] SSH public key added to `ops_users[0].ssh_keys[0]`
-  - [ ] Username is correct (tomek)
+  - [ ] Username is correct (John)
   - [ ] SSH key format is correct (starts with ssh-ed25519 or ssh-rsa)
 
   ```bash
@@ -135,7 +135,7 @@ Before running setup playbook, verify:
 - [ ] Network connectivity confirmed
 - [ ] SSH public key in group_vars/users.yml
 - [ ] Inventory IPs correct
-- [ ] tomek password available (will be prompted)
+- [ ] John password available (will be prompted)
 
 ## ✅ Running setup.yml
 
@@ -146,7 +146,7 @@ cd ~/Ansible-playbook
 
 ansible-playbook playbooks/setup.yml \
   -i inventory/sample_inventory.yml \
-  -u tomek \
+  -u John \
   -k \
   --ask-become-pass
 ```
@@ -182,7 +182,7 @@ ansible all -i inventory/sample_inventory.yml -a "id ansible"
 ansible all -i inventory/sample_inventory.yml -a "sudo sshd -T | grep passwordauth"
 # Should show: passwordauthentication no
 
-# Verify tomek user has SSH key access
+# Verify John user has SSH key access
 ansible all -i inventory/sample_inventory.yml -a "wc -l ~/.ssh/authorized_keys"
 # Should show: 1 (at least one SSH key)
 ```
@@ -220,7 +220,7 @@ After site.yml completes:
 ansible all -i inventory/sample_inventory.yml -a "systemctl status ssh"
 
 # Verify users created
-ansible all -i inventory/sample_inventory.yml -a "getent passwd ansible tomek"
+ansible all -i inventory/sample_inventory.yml -a "getent passwd ansible John"
 
 # Check firewall rules applied
 ansible all -i inventory/sample_inventory.yml -a "sudo ufw status"
@@ -240,8 +240,8 @@ If something fails, check:
 ### setup.yml Fails
 - [ ] SSH public key is in group_vars/users.yml
 - [ ] Inventory IP is correct
-- [ ] Can SSH manually: `ssh -v tomek@IP`
-- [ ] tomek password is typed correctly
+- [ ] Can SSH manually: `ssh -v John@IP`
+- [ ] John password is typed correctly
 - [ ] User has sudo access on VM
 - [ ] SSH service is running: `sudo systemctl status ssh`
 
@@ -255,12 +255,12 @@ If something fails, check:
 ### Connection Issues
 - [ ] VM is powered on and has network access
 - [ ] Ping works: `ping 192.168.X.X`
-- [ ] SSH works: `ssh -v tomek@IP`
+- [ ] SSH works: `ssh -v John@IP`
 - [ ] Check firewall: `sudo ufw allow 22/tcp`
 - [ ] Check SSH running: `sudo systemctl status ssh`
 
 ### Permission Issues
-- [ ] tomek has sudo access (default on fresh install)
+- [ ] John has sudo access (default on fresh install)
 - [ ] ansible user created successfully
 - [ ] SSH keys have correct permissions (600)
 - [ ] .ssh directory has correct permissions (700)
@@ -277,7 +277,7 @@ ansible all -i inventory/sample_inventory.yml -m ping
 ansible all -i inventory/sample_inventory.yml -m setup | jq '.ansible_facts | {os_family, distribution, distribution_version}'
 
 # Check all users
-ansible all -i inventory/sample_inventory.yml -a "getent passwd | grep -E 'ansible|tomek'"
+ansible all -i inventory/sample_inventory.yml -a "getent passwd | grep -E 'ansible|John'"
 
 # Verify SSH hardening
 ansible all -i inventory/sample_inventory.yml -a "sudo sshd -T | grep -E 'passwordauth|rootlogin|pubkeyauth'"

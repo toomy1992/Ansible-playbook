@@ -11,7 +11,7 @@
 ### 1. Main Setup Playbook ⭐
    📄 playbooks/setup.yml
    └─ Initializes fresh Ubuntu VMs with ansible user, SSH hardening
-   └─ Usage: ansible-playbook setup.yml -u tomek -k --ask-become-pass
+   └─ Usage: ansible-playbook setup.yml -u John -k --ask-become-pass
 
 ### 2. Configuration Files 🔐
    📁 group_vars/users.yml (NEW)
@@ -74,13 +74,13 @@
 
 ```
 Fresh Ubuntu VM Installation
-    ↓ (only tomek user, password auth)
+    ↓ (only John user, password auth)
 [Edit Configuration Files]
     ├─ group_vars/users.yml - Add SSH public key
     └─ inventory/sample_inventory.yml - Add VM IP
     ↓
 [Run setup.yml]
-    ansible-playbook setup.yml -u tomek -k --ask-become-pass
+    ansible-playbook setup.yml -u John -k --ask-become-pass
     ↓ (creates ansible user, hardens SSH)
 [Verify Setup]
     ansible all -m ping
@@ -103,7 +103,7 @@ Fully Configured Production Server ✅
    └─ UID 1000, passwordless sudo, for Ansible execution
 
 ✅ Operational Users
-   └─ tomek and others with SSH key-only access
+   └─ John and others with SSH key-only access
 
 ✅ SSH Hardening Enforced
    └─ Password auth disabled, root login disabled, strong ciphers
@@ -179,7 +179,7 @@ Update VM IP address: `ansible_host: 192.168.X.X`
 ```bash
 ansible-playbook playbooks/setup.yml \
   -i inventory/sample_inventory.yml \
-  -u tomek \
+  -u John \
   -k \
   --ask-become-pass
 ```
@@ -218,7 +218,7 @@ For Navigation:
 
 | User | Initial Auth | After Setup | Purpose |
 |------|--------------|-------------|---------|
-| tomek | Password | SSH Keys | Human user / Ops |
+| John | Password | SSH Keys | Human user / Ops |
 | ansible | (N/A) | SSH Keys | Automation user |
 
 ## ✨ DESIGN HIGHLIGHTS
@@ -261,7 +261,7 @@ Full Deployment:          ~5-10 minutes per VM
 
 ## 🎯 WHAT THIS SOLVES
 
-❌ Problem: Fresh VM only has 'tomek' user with password
+❌ Problem: Fresh VM only has 'John' user with password
 ✅ Solution: setup.yml creates ansible user and hardens SSH
 
 ❌ Problem: Multiple playbooks needed different users
@@ -281,7 +281,7 @@ Full Deployment:          ~5-10 minutes per VM
 Before Setup:
   ❌ SSH password authentication enabled
   ❌ Root login possible
-  ❌ Only tomek user exists
+  ❌ Only John user exists
   ❌ No automation user
 
 After Setup:

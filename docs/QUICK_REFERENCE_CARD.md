@@ -10,7 +10,7 @@
 │    cat ~/.ssh/id_ed25519.pub                            │
 │                                                         │
 │ 2. Edit: group_vars/users.yml                           │
-│    Replace "ssh-ed25519 AAAA... tomek@workstation"     │
+│    Replace "ssh-ed25519 AAAA... John@workstation"     │
 │    With your actual SSH public key                      │
 │                                                         │
 │ 3. Edit: inventory/sample_inventory.yml                 │
@@ -27,12 +27,12 @@
 │                                                         │
 │ $ ansible-playbook playbooks/setup.yml \               │
 │     -i inventory/sample_inventory.yml \                 │
-│     -u tomek \                                          │
+│     -u John \                                          │
 │     -k \                                                │
 │     --ask-become-pass                                   │
 │                                                         │
 │ When prompted:                                          │
-│ • SSH password: (tomek's password)                     │
+│ • SSH password: (John's password)                     │
 │ • Become password: (usually same)                       │
 │                                                         │
 │ Expected output: "VM SETUP COMPLETE"                    │
@@ -82,18 +82,18 @@
 
 | Credential | Value | Used For |
 |-----------|-------|----------|
-| **tomek** (initial) | password | First SSH connection |
+| **John** (initial) | password | First SSH connection |
 | **ansible** (created) | SSH key | All playbooks after setup |
-| **tomek** (after setup) | SSH key | Operational access |
+| **John** (after setup) | SSH key | Operational access |
 
 ## 📁 Files to Edit (Before Step 2)
 
 ### group_vars/users.yml
 ```yaml
 ops_users:
-  - name: tomek
+  - name: John
     ssh_keys:
-      - "ssh-ed25519 AAAA... tomek@workstation"  # ← PASTE YOUR KEY HERE
+      - "ssh-ed25519 AAAA... John@workstation"  # ← PASTE YOUR KEY HERE
 ```
 
 ### inventory/sample_inventory.yml
@@ -111,7 +111,7 @@ common_ubuntu:
 # Step 2: Setup with password
 ansible-playbook playbooks/setup.yml \
   -i inventory/sample_inventory.yml \
-  -u tomek -k --ask-become-pass
+  -u John -k --ask-become-pass
 
 # Step 3: Verify
 ansible all -i inventory/sample_inventory.yml -m ping
@@ -142,11 +142,11 @@ ansible all -a "id ansible"
 ansible all -a "sudo sshd -T | grep passwordauth"
 # Should show: passwordauthentication no
 
-# Check tomek has SSH key
+# Check John has SSH key
 ansible all -a "cat ~/.ssh/authorized_keys"
 
 # Check all users
-ansible all -a "getent passwd | grep -E 'ansible|tomek'"
+ansible all -a "getent passwd | grep -E 'ansible|John'"
 
 # Check services running (if deployed)
 ansible all -a "systemctl status ssh"
@@ -160,7 +160,7 @@ ansible all -a "systemctl status ssh"
 ping 192.168.X.X
 
 # Check SSH is running
-ssh -v tomek@192.168.X.X
+ssh -v John@192.168.X.X
 # If fails: sudo systemctl start ssh (on VM)
 ```
 
@@ -175,7 +175,7 @@ cat inventory/sample_inventory.yml | python -m yaml
 
 ### setup.yml Fails With Permission Error
 ```bash
-# Make sure tomek has sudo access (default on fresh Ubuntu)
+# Make sure John has sudo access (default on fresh Ubuntu)
 # Run again with --ask-become-pass flag
 ```
 

@@ -7,18 +7,18 @@
 #
 # This playbook:
 # 1. Creates the 'ansible' automation user with passwordless sudo
-# 2. Sets up SSH key-only login for 'tomek' user (installed during OS setup)
+# 2. Sets up SSH key-only login for 'John' user (installed during OS setup)
 # 3. Hardens SSH configuration
 # 4. Disables password authentication
 #
 # USAGE:
-# First time setup (VM has only 'tomek' user with password):
+# First time setup (VM has only 'John' user with password):
 #   ansible-playbook playbooks/setup.yml -i inventory/sample_inventory.yml \
-#     -u tomek -k --ask-become-pass
+#     -u John -k --ask-become-pass
 #
 # Notes:
-#   -u tomek              : Connect as tomek user (initial VM user)
-#   -k                    : Ask for tomek password
+#   -u John              : Connect as John user (initial VM user)
+#   -k                    : Ask for John password
 #   --ask-become-pass     : Ask for sudo password
 #
 # After this playbook succeeds, you can use:
@@ -43,8 +43,8 @@
     - name: Verify running as sudo-capable user
       assert:
         that:
-          - ansible_user_id in ['tomek', 'root'] or 'sudo' in ansible_user_id
-        fail_msg: "This playbook must run as 'tomek' or a sudo-capable user"
+          - ansible_user_id in ['John', 'root'] or 'sudo' in ansible_user_id
+        fail_msg: "This playbook must run as 'John' or a sudo-capable user"
       become: no
 
   roles:
@@ -68,7 +68,7 @@
           - username: ansible
             nopasswd: true
 
-    # Step 2: Set up SSH keys for operational users (tomek + others)
+    # Step 2: Set up SSH keys for operational users (John + others)
     - role: users_ops
       tags: [setup, users-ops]
 

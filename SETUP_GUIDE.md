@@ -19,7 +19,7 @@ The setup process uses a dedicated playbook that:
 
 ### On Fresh Ubuntu VM
 - Ubuntu 18.04+ installed
-- User `tomek` created during OS installation
+- User `John` created during OS installation
 - Network connectivity to your PC
 - SSH enabled
 
@@ -27,15 +27,15 @@ The setup process uses a dedicated playbook that:
 
 ### Generate SSH Key (if you don't have one)
 ```bash
-ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -C "tomek@workstation"
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -C "John@workstation"
 # or for RSA:
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N "" -C "tomek@workstation"
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N "" -C "John@workstation"
 ```
 
 ### Get Your SSH Public Key
 ```bash
 cat ~/.ssh/id_ed25519.pub
-# Output: ssh-ed25519 AAAA... tomek@workstation
+# Output: ssh-ed25519 AAAA... John@workstation
 ```
 
 ## Step 2: Update Configuration Files
@@ -46,18 +46,18 @@ Edit [group_vars/users.yml](../group_vars/users.yml):
 
 ```yaml
 ops_users:
-  - name: tomek
+  - name: John
     uid: 1100
     group: operators
     groups:
       - sudo
       - docker
     shell: /bin/bash
-    home: /home/tomek
+    home: /home/John
     create_home: true
     comment: "Operations Manager"
     ssh_keys:
-      - "ssh-ed25519 AAAA... tomek@workstation"  # ← Add your public key here
+      - "ssh-ed25519 AAAA... John@workstation"  # ← Add your public key here
 ```
 
 ### 2. Update `inventory/sample_inventory.yml`
@@ -79,25 +79,25 @@ all:
 
 This is the critical step that initializes your VM.
 
-### First Time (VM only has 'tomek' user)
+### First Time (VM only has 'John' user)
 
 From your personal PC:
 
 ```bash
 cd Ansible-playbook
 
-# Run setup playbook with tomek user and password auth
+# Run setup playbook with John user and password auth
 ansible-playbook playbooks/setup.yml \
   -i inventory/sample_inventory.yml \
-  -u tomek \
+  -u John \
   -k \
   --ask-become-pass
 ```
 
 **Flags explained:**
-- `-u tomek` - Connect as the initial tomek user
-- `-k` - Prompt for tomek's SSH password
-- `--ask-become-pass` - Prompt for sudo password (usually same as tomek's password)
+- `-u John` - Connect as the initial John user
+- `-k` - Prompt for John's SSH password
+- `--ask-become-pass` - Prompt for sudo password (usually same as John's password)
 
 **Output should show:**
 ```
@@ -105,7 +105,7 @@ INITIALIZING FRESH UBUNTU VM
 =========================================
 Host: common-01
 OS: Ubuntu 22.04 LTS
-Current User: tomek
+Current User: John
 =========================================
 ...
 VM SETUP COMPLETE
@@ -142,7 +142,7 @@ ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
 - Enables passwordless sudo
 
 ### 2. SSH Key Configuration
-- Adds your SSH public key to `tomek` user's `.ssh/authorized_keys`
+- Adds your SSH public key to `John` user's `.ssh/authorized_keys`
 - Sets proper directory permissions (700)
 - Sets proper key permissions (600)
 
@@ -154,7 +154,7 @@ ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
 
 ### 4. User Configuration
 - Creates `operators` group (gid 1100)
-- Configures tomek with sudo access
+- Configures John with sudo access
 - Sets up SSH directory structure
 
 ## Troubleshooting
@@ -180,7 +180,7 @@ ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
 **Problem:** "Incorrect password" for sudo
 
 **Solution:**
-- tomek's sudo password is usually the same as SSH password
+- John's sudo password is usually the same as SSH password
 - If different, you may need to use `--ask-become-pass`
 
 ### Setup Playbook Failed Partway Through
@@ -204,7 +204,7 @@ ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
 ## Security Considerations
 
 ### Passwords
-- Initial setup requires tomek's password (unavoidable for fresh VM)
+- Initial setup requires John's password (unavoidable for fresh VM)
 - After setup, all auth is key-based (no password storage)
 - Ansible user has passwordless sudo (can be restricted if needed)
 
@@ -246,7 +246,7 @@ ansible all -i inventory/sample_inventory.yml -a "whoami"
 ansible all -i inventory/sample_inventory.yml -a "sudo sshd -T | grep -E 'passwordauth|pubkeyauth'"
 
 # Check users created
-ansible all -i inventory/sample_inventory.yml -a "getent passwd ansible tomek"
+ansible all -i inventory/sample_inventory.yml -a "getent passwd ansible John"
 ```
 
 ## Advanced: Multiple VMs
@@ -257,7 +257,7 @@ To setup multiple VMs:
 2. Update `group_vars/users.yml` with all public keys
 3. Run setup playbook against all hosts:
 ```bash
-ansible-playbook playbooks/setup.yml -i inventory/sample_inventory.yml -u tomek -k --ask-become-pass
+ansible-playbook playbooks/setup.yml -i inventory/sample_inventory.yml -u John -k --ask-become-pass
 ```
 
 ## Playbook Idempotency
@@ -273,13 +273,13 @@ This means you can safely re-run if something fails!
 
 ```
 FRESH VM (just installed)
-├─ User: tomek (password auth)
+├─ User: John (password auth)
 └─ SSH: Allowed passwords
        ↓
-   [RUN: setup.yml -u tomek -k]
+   [RUN: setup.yml -u John -k]
        ↓
 CONFIGURED VM (ready for automation)
-├─ User: tomek (SSH key auth only)
+├─ User: John (SSH key auth only)
 ├─ User: ansible (created, passwordless sudo)
 └─ SSH: Key-only, hardened config
        ↓

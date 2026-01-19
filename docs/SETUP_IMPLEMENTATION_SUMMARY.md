@@ -4,12 +4,12 @@ This document summarizes the new setup workflow for initializing fresh Ubuntu VM
 
 ## Problem Solved
 
-When deploying to a fresh Ubuntu VM that only has the `tomek` user (created during OS installation), we needed:
+When deploying to a fresh Ubuntu VM that only has the `John` user (created during OS installation), we needed:
 
 1. **Initial SSH access** - Using password auth (only available method initially)
 2. **Automation user creation** - Create `ansible` user for automated playbooks
 3. **SSH hardening** - Remove password auth, enable key-only login
-4. **User configuration** - Set up `tomek` and `ansible` users properly
+4. **User configuration** - Set up `John` and `ansible` users properly
 5. **Clean, repeatable process** - Work from your personal PC
 
 ## Solution: Multi-Stage Initialization
@@ -17,7 +17,7 @@ When deploying to a fresh Ubuntu VM that only has the `tomek` user (created duri
 ### Stage 1: Fresh VM (Before setup.yml)
 ```
 Fresh Ubuntu Install
-├─ User: tomek (password authentication enabled)
+├─ User: John (password authentication enabled)
 ├─ SSH: Password-based login allowed
 └─ Ready: For setup.yml deployment
 ```
@@ -25,7 +25,7 @@ Fresh Ubuntu Install
 ### Stage 2: After setup.yml
 ```
 Initialized VM (Ready for automation)
-├─ User: tomek (SSH key-only auth)
+├─ User: John (SSH key-only auth)
 ├─ User: ansible (created, passwordless sudo)
 ├─ SSH: Hardened, key-only, secure
 └─ Ready: For full site.yml deployment
@@ -46,7 +46,7 @@ Fully Configured Production Server
 ### 1. **playbooks/setup.yml** (Main Setup Playbook)
 - Runs from your personal PC using password auth
 - Creates `ansible` user (uid 1000, passwordless sudo)
-- Configures SSH keys for `tomek` and operational users
+- Configures SSH keys for `John` and operational users
 - Hardens SSH (disables password auth)
 - Tag: `setup`
 
@@ -54,7 +54,7 @@ Fully Configured Production Server
 ```bash
 ansible-playbook playbooks/setup.yml \
   -i inventory/sample_inventory.yml \
-  -u tomek \
+  -u John \
   -k \
   --ask-become-pass
 ```
@@ -92,9 +92,9 @@ ansible-playbook playbooks/setup.yml \
 
 ### ✅ Password-Only to Key-Only Auth
 ```
-Initial: SSH with password (tomek@VM)
+Initial: SSH with password (John@VM)
   ↓ [setup.yml]
-Final: SSH with key-only (ansible@VM, tomek@VM with keys)
+Final: SSH with key-only (ansible@VM, John@VM with keys)
 ```
 
 ### ✅ Automation User (ansible) Creation
@@ -103,7 +103,7 @@ Final: SSH with key-only (ansible@VM, tomek@VM with keys)
 - Sudo: Passwordless
 - Purpose: Runs automated playbooks
 
-### ✅ Operational User (tomek) Hardening
+### ✅ Operational User (John) Hardening
 - Converted to SSH key-only auth
 - Added to sudo group
 - SSH directory properly configured
@@ -129,8 +129,8 @@ Final: SSH with key-only (ansible@VM, tomek@VM with keys)
 
 ### **group_vars/users.yml**  
 - Added `ops_user_groups` (operators group)
-- Added `ops_users` (tomek user config with SSH key placeholder)
-- Added `ops_sudo_users` (tomek sudo access)
+- Added `ops_users` (John user config with SSH key placeholder)
+- Added `ops_sudo_users` (John sudo access)
 - Setup instructions documented
 
 ### **playbooks/site.yml**
@@ -155,7 +155,7 @@ nano inventory/sample_inventory.yml # Update VM IP address
 # STEP 2: Setup (Run from personal PC)
 ansible-playbook playbooks/setup.yml \
   -i inventory/sample_inventory.yml \
-  -u tomek \
+  -u John \
   -k \
   --ask-become-pass
 
@@ -172,7 +172,7 @@ ansible-playbook playbooks/site.yml \
 ### Before Running setup.yml:
 1. ✅ Add your SSH public key to `group_vars/users.yml`
 2. ✅ Update VM IP in `inventory/sample_inventory.yml`
-3. ✅ Have tomek's password available (prompted with -k flag)
+3. ✅ Have John's password available (prompted with -k flag)
 4. ✅ Ensure VM is reachable via SSH
 
 ### During setup.yml Execution:
@@ -183,7 +183,7 @@ ansible-playbook playbooks/site.yml \
 
 ### After setup.yml Completes:
 - ✅ ansible user created and ready
-- ✅ tomek user hardened with SSH keys
+- ✅ John user hardened with SSH keys
 - ✅ SSH password auth disabled
 - ✅ Ready for site.yml deployment
 - ✅ All subsequent runs use key auth (no -k needed)
@@ -218,14 +218,14 @@ ansible-playbook playbooks/site.yml \
 ### Single VM:
 ```bash
 # Update files, run setup, run site
-ansible-playbook playbooks/setup.yml -i inventory/sample_inventory.yml -u tomek -k --ask-become-pass
+ansible-playbook playbooks/setup.yml -i inventory/sample_inventory.yml -u John -k --ask-become-pass
 ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
 ```
 
 ### Multiple VMs (Parallel):
 ```bash
 # All VMs at once (efficient for fleet deployment)
-ansible-playbook playbooks/setup.yml -i inventory/sample_inventory.yml -u tomek -k --ask-become-pass
+ansible-playbook playbooks/setup.yml -i inventory/sample_inventory.yml -u John -k --ask-become-pass
 ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
 ```
 

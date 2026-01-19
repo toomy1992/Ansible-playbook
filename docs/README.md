@@ -244,7 +244,7 @@ When you encounter an issue:
    ```bash
    ansible-playbook playbooks/setup.yml \
      -i inventory/sample_inventory.yml \
-     -u tomek -k --ask-become-pass \
+     -u John -k --ask-become-pass \
      -vvv
    ```
 

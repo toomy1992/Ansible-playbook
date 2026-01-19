@@ -12,12 +12,12 @@ ops_user_groups: []
 ops_users: []
 # Example:
 # ops_users:
-#   - name: tomek
+#   - name: John
 #     uid: 1100
 #     group: operators
 #     groups: [sudo, docker]
 #     shell: /bin/bash
-#     home: /home/tomek
+#     home: /home/John
 #     create_home: true
 #     comment: "Operations Manager"
 #     ssh_keys:
@@ -27,5 +27,5 @@ ops_users: []
 ops_sudo_users: []
 # Example:
 # ops_sudo_users:
-#   - username: tomek
+#   - username: John
 #     nopasswd: true

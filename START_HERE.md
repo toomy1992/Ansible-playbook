@@ -40,9 +40,9 @@ cat ~/.ssh/id_ed25519.pub
 **Edit:** `group_vars/users.yml`
 ```yaml
 ops_users:
-  - name: tomek
+  - name: John
     ssh_keys:
-      - "ssh-ed25519 AAAA... tomek@workstation"  # ← PASTE YOUR KEY HERE
+      - "ssh-ed25519 AAAA... John@workstation"  # ← PASTE YOUR KEY HERE
 ```
 
 **Edit:** `inventory/sample_inventory.yml`
@@ -57,13 +57,13 @@ common_ubuntu:
 ```bash
 ansible-playbook playbooks/setup.yml \
   -i inventory/sample_inventory.yml \
-  -u tomek \
+  -u John \
   -k \
   --ask-become-pass
 ```
 
 When prompted:
-- SSH password: (tomek's password from VM installation)
+- SSH password: (John's password from VM installation)
 - Become password: (usually same as SSH password)
 
 ### Step 4: Verify & Deploy (2 minutes)
@@ -90,12 +90,12 @@ ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
 ## 🎯 What Happens When You Run setup.yml
 
 ```
-Fresh VM (tomek + password auth)
+Fresh VM (John + password auth)
           ↓
     [setup.yml runs]
           ↓
 Creates: ansible user (uid 1000)
-Configures: SSH keys for tomek
+Configures: SSH keys for John
 Hardens: SSH (disables password auth)
 Enables: Passwordless sudo for ansible
           ↓
@@ -128,9 +128,9 @@ ls -la ~/.ssh/id_ed25519
 ping 192.168.X.X
 
 # ✅ SSH works with password
-ssh -v tomek@192.168.X.X
+ssh -v John@192.168.X.X
 
-# ✅ tomek can sudo
+# ✅ John can sudo
 # (verify on VM: sudo whoami)
 ```
 
@@ -180,7 +180,7 @@ See [docs/PRE_FLIGHT_CHECKLIST.md](docs/PRE_FLIGHT_CHECKLIST.md) for complete tr
 # 3. Run setup on all:
 ansible-playbook playbooks/setup.yml \
   -i inventory/sample_inventory.yml \
-  -u tomek -k --ask-become-pass
+  -u John -k --ask-become-pass
 
 # 4. Deploy to all:
 ansible-playbook playbooks/site.yml \
@@ -225,7 +225,7 @@ You'll know everything worked when:
 1. Get SSH public key: `cat ~/.ssh/id_ed25519.pub`
 2. Edit: `group_vars/users.yml` (paste SSH key)
 3. Edit: `inventory/sample_inventory.yml` (add VM IP)
-4. Run: `ansible-playbook playbooks/setup.yml -u tomek -k --ask-become-pass`
+4. Run: `ansible-playbook playbooks/setup.yml -u John -k --ask-become-pass`
 5. Verify: `ansible all -m ping`
 6. Deploy: `ansible-playbook playbooks/site.yml`
 

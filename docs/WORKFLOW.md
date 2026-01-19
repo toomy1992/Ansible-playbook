@@ -5,7 +5,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    UBUNTU VM INSTALLATION                        │
-│  • User: tomek (with password)                                  │
+│  • User: John (with password)                                  │
 │  • SSH: Password authentication enabled                         │
 │  • Root: No remote access yet                                   │
 └─────────────────────────────────────────────────────────────────┘
@@ -23,12 +23,12 @@
 │  Command:                                                        │
 │    ansible-playbook playbooks/setup.yml \                       │
 │      -i inventory/sample_inventory.yml \                         │
-│      -u tomek \                                                  │
+│      -u John \                                                  │
 │      -k \                                                        │
 │      --ask-become-pass                                          │
 │                                                                  │
 │  Flags:                                                          │
-│    -u tomek          → Connect as tomek user                    │
+│    -u John          → Connect as John user                    │
 │    -k                → Prompt for SSH password                  │
 │    --ask-become-pass → Prompt for sudo password                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -46,7 +46,7 @@
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │              VM READY FOR AUTOMATION (SETUP COMPLETE)            │
-│  • User: tomek → SSH key-only auth                              │
+│  • User: John → SSH key-only auth                              │
 │  • User: ansible → Created, passwordless sudo                   │
 │  • SSH: Hardened, key-only, no passwords                        │
 │  • Firewall: Basic rules applied                                │
@@ -106,7 +106,7 @@ setup.yml
 │
 ├── Role: users_ops
 │   ├── Creates 'operators' group (gid 1100)
-│   ├── Configures 'tomek' user
+│   ├── Configures 'John' user
 │   ├── Adds SSH public keys to authorized_keys
 │   └── Sets up sudo access
 │
@@ -199,7 +199,7 @@ Fresh VM Setup Issues?
 ├─ Can't connect to VM?
 │  ├─ Check VM is running and has network
 │  ├─ Check SSH is enabled: sudo systemctl status ssh
-│  ├─ Test: ssh -v tomek@192.168.X.X
+│  ├─ Test: ssh -v John@192.168.X.X
 │  └─ Add firewall rule: sudo ufw allow 22/tcp
 │
 ├─ setup.yml command fails?
@@ -227,13 +227,13 @@ Fresh VM Setup Issues?
 ```
 For multiple VMs in sequence:
 
-1. Install all VMs with user 'tomek'
+1. Install all VMs with user 'John'
 2. Add all VM IPs to inventory/sample_inventory.yml
 3. Add all SSH public keys to group_vars/users.yml
 4. Run setup.yml against all hosts:
    ansible-playbook playbooks/setup.yml \
      -i inventory/sample_inventory.yml \
-     -u tomek \
+     -u John \
      -k \
      --ask-become-pass
 
@@ -249,7 +249,7 @@ This initializes all VMs in parallel!
 ### After setup.yml completes:
 ```
 ✓ ansible user created (id 1000)
-✓ tomek has SSH key authentication
+✓ John has SSH key authentication
 ✓ Password authentication disabled
 ✓ SSH config hardened
 ✓ Firewall rules applied
@@ -279,7 +279,7 @@ nano inventory/sample_inventory.yml # Update VM IP
 # Run setup
 ansible-playbook playbooks/setup.yml \
   -i inventory/sample_inventory.yml \
-  -u tomek \
+  -u John \
   -k \
   --ask-become-pass
 
