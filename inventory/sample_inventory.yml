@@ -88,6 +88,23 @@ all:
     ansible_become: true
     ansible_become_method: sudo
 
+    ops_user_groups:
+      - name: operators
+        gid: 1100
+
+    ops_users:
+      - name: user
+        uid: 1200
+        group: user
+        groups:
+          - sudo
+        shell: /bin/bash
+        home: /home/user
+        create_home: true
+        comment: "user automation user"
+        ssh_keys:
+          - "ssh-ed25519 ..........."
+
   # ==============================
   # GROUP-SPECIFIC OVERRIDES
   # ==============================

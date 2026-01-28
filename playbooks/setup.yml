@@ -68,7 +68,7 @@
           - username: ansible
             nopasswd: true
 
-    # Step 2: Set up SSH keys for operational users (John + others)
+    # Step 2: Set up SSH keys for operational users 
     - role: users_ops
       tags: [setup, users-ops]
 
