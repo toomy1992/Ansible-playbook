@@ -63,7 +63,7 @@ apt_upgrade_type: safe  # Options: safe, full, dist
 
 system_groups:
   - name: ansible
-    gid: 1000
+    gid: 1200
 # Example:
 # system_groups:
 #   - name: developers
@@ -73,7 +73,7 @@ system_groups:
 
 user_accounts:
   - name: ansible
-    uid: 1000
+    uid: 1200
     group: ansible
     groups: sudo
     shell: /bin/bash

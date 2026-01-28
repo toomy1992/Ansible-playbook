@@ -54,10 +54,10 @@
       vars:
         system_groups:
           - name: ansible
-            gid: 1000
+            gid: 1200
         user_accounts:
-          - name: ansible
-            uid: 1000
+          - username: ansible
+            uid: 1200
             group: ansible
             groups: [sudo]
             shell: /bin/bash
