@@ -13,7 +13,7 @@
 
 - name: Add Rundeck repository GPG key
   apt_key:
-    url: https://repo.rundeck.org/pki/rundeck-repo.key
+    url: https://packages.rundeck.com/pagerduty/rundeck/gpgkey
     state: present
   become: yes
   tags:
@@ -21,11 +21,20 @@
 
 - name: Add Rundeck repository
   apt_repository:
-    repo: "deb https://repo.rundeck.org/rundeck/deb/ focal main"
+    repo: "deb https://packages.rundeck.com/pagerduty/rundeck/any/ any main"
     state: present
   become: yes
   tags:
     - rundeck
+
+- name: Add Rundeck-src repository
+  apt_repository:
+    repo: "deb-src https://packages.rundeck.com/pagerduty/rundeck/any/ any main"
+    state: present
+  become: yes
+  tags:
+    - rundeck
+
 
 - name: Update APT cache
   apt:
