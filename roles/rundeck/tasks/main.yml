@@ -1,5 +1,10 @@
 ---
 # Rundeck role - Install and configure Rundeck (Debian/Ubuntu)
+# Aligned with: https://docs.rundeck.com/docs/administration/configuration/
+
+#=============================================================================
+# JAVA INSTALLATION
+#=============================================================================
 
 - name: Install Java (required for Rundeck)
   apt:
@@ -10,6 +15,11 @@
   become: yes
   tags:
     - rundeck
+    - rundeck-java
+
+#=============================================================================
+# RUNDECK REPOSITORY CONFIGURATION (DO NOT MODIFY)
+#=============================================================================
 
 - name: Add Rundeck repository GPG key
   apt_key:
@@ -35,6 +45,9 @@
   tags:
     - rundeck
 
+#=============================================================================
+# RUNDECK INSTALLATION
+#=============================================================================
 
 - name: Update APT cache
   apt:
@@ -53,94 +66,339 @@
   tags:
     - rundeck
 
+#=============================================================================
+# DIRECTORY SETUP
+#=============================================================================
+
+- name: Create Rundeck directories
+  file:
+    path: "{{ item.path }}"
+    owner: rundeck
+    group: rundeck
+    mode: "{{ item.mode }}"
+    state: directory
+  loop:
+    - { path: "{{ rundeck_projects_dir }}", mode: '0755' }
+    - { path: "{{ rundeck_log_dir }}", mode: '0755' }
+    - { path: "{{ rundeck_execution_logs_dir }}", mode: '0755' }
+    - { path: "{{ rundeck_data_dir }}", mode: '0755' }
+    - { path: "{{ rundeck_plugins_dir }}", mode: '0755' }
+    - { path: "{{ rundeck_storage_path }}", mode: '0700' }
+    - { path: "{{ rundeck_tmp_dir }}", mode: '0755' }
+  become: yes
+  tags:
+    - rundeck
+    - rundeck-dirs
+
+#=============================================================================
+# DATABASE CONFIGURATION
+# https://docs.rundeck.com/docs/administration/configuration/database/postgres.html
+#=============================================================================
+
+- name: Configure PostgreSQL database connection
+  blockinfile:
+    path: /etc/rundeck/rundeck-config.properties
+    marker: "# {mark} ANSIBLE MANAGED - DATABASE CONFIGURATION"
+    block: |
+      # PostgreSQL Database Configuration
+      dataSource.driverClassName = {{ rundeck_db_driver }}
+      dataSource.url = {{ rundeck_db_url }}
+      dataSource.username = {{ rundeck_db_user }}
+      dataSource.password = {{ rundeck_db_password }}
+      
+      # Connection Pool Settings
+      dataSource.pooled = true
+      dataSource.properties.maxActive = {{ rundeck_db_pool_max_active }}
+      dataSource.properties.maxIdle = {{ rundeck_db_pool_max_idle }}
+      dataSource.properties.minIdle = {{ rundeck_db_pool_min_idle }}
+      dataSource.properties.initialSize = {{ rundeck_db_pool_initial_size }}
+      dataSource.properties.testWhileIdle = true
+      dataSource.properties.validationQuery = SELECT 1
+      dataSource.properties.timeBetweenEvictionRunsMillis = 60000
+  become: yes
+  notify: Restart Rundeck
+  when: rundeck_database_backend == 'postgresql'
+  tags:
+    - rundeck
+    - rundeck-database
+
+- name: Remove H2 database configuration for PostgreSQL
+  lineinfile:
+    path: /etc/rundeck/rundeck-config.properties
+    regexp: "^dataSource.dbCreate.*$"
+    state: absent
+  become: yes
+  when: rundeck_database_backend == 'postgresql'
+  tags:
+    - rundeck
+    - rundeck-database
+
+#=============================================================================
+# SERVER CONFIGURATION
+# https://docs.rundeck.com/docs/administration/configuration/config-file-reference.html
+#=============================================================================
+
 - name: Configure Rundeck server properties
   lineinfile:
     path: /etc/rundeck/rundeck-config.properties
-    regexp: "^{{ item.key }}"
-    line: "{{ item.key }}={{ item.value }}"
+    regexp: "^{{ item.key }}\\s*="
+    line: "{{ item.key }} = {{ item.value }}"
     state: present
   loop:
-    - { key: 'grails.serverURL', value: "{{ rundeck_grails_url | default('http://localhost:4440') }}" }
-    - { key: 'server.servlet.context-path', value: "{{ rundeck_context_path | default('/') }}" }
-    - { key: 'server.port', value: "{{ rundeck_port | default(4440) }}" }
-    - { key: 'server.address', value: "{{ rundeck_address | default('127.0.0.1') }}" }
+    - { key: 'grails.serverURL', value: "{{ rundeck_grails_url }}" }
+    - { key: 'server.servlet.context-path', value: "{{ rundeck_context_path }}" }
+    - { key: 'server.port', value: "{{ rundeck_port }}" }
+    - { key: 'server.address', value: "{{ rundeck_address }}" }
   become: yes
   notify: Restart Rundeck
   tags:
     - rundeck
+    - rundeck-config
 
-- name: Create Rundeck projects directory
-  file:
-    path: /var/rundeck/projects
-    owner: rundeck
-    group: rundeck
-    mode: '0755'
-    state: directory
+#=============================================================================
+# EXECUTION CONFIGURATION
+#=============================================================================
+
+- name: Configure execution mode
+  lineinfile:
+    path: /etc/rundeck/rundeck-config.properties
+    regexp: "^rundeck.executionMode\\s*="
+    line: "rundeck.executionMode = {{ rundeck_execution_mode }}"
+    state: present
   become: yes
+  notify: Restart Rundeck
   tags:
     - rundeck
+    - rundeck-config
 
-- name: Create Rundeck logs directory
-  file:
-    path: /var/log/rundeck
-    owner: rundeck
-    group: rundeck
-    mode: '0755'
-    state: directory
+- name: Configure execution settings
+  blockinfile:
+    path: /etc/rundeck/rundeck-config.properties
+    marker: "# {mark} ANSIBLE MANAGED - EXECUTION CONFIGURATION"
+    block: |
+      # Execution Settings
+      rundeck.execution.logs.fileStorage.cancelOnStorageFailure = true
+      rundeck.executionMode = {{ rundeck_execution_mode }}
   become: yes
+  notify: Restart Rundeck
   tags:
     - rundeck
+    - rundeck-config
+
+#=============================================================================
+# FRAMEWORK PROPERTIES
+#=============================================================================
 
 - name: Configure Rundeck framework properties
   lineinfile:
     path: /etc/rundeck/framework.properties
-    regexp: "^{{ item.key }}"
-    line: "{{ item.key }}={{ item.value }}"
+    regexp: "^{{ item.key }}\\s*="
+    line: "{{ item.key }} = {{ item.value }}"
     state: present
   loop:
-    - { key: 'framework.server.name', value: "{{ ansible_hostname }}" }
+    - { key: 'framework.server.name', value: "{{ rundeck_server_name }}" }
     - { key: 'framework.server.hostname', value: "{{ ansible_fqdn }}" }
-    - { key: 'framework.server.port', value: "{{ rundeck_port | default(4440) }}" }
-    - { key: 'framework.server.url', value: "{{ rundeck_grails_url | default('http://localhost:4440') }}" }
+    - { key: 'framework.server.port', value: "{{ rundeck_port }}" }
+    - { key: 'framework.server.url', value: "{{ rundeck_grails_url }}" }
+    - { key: 'framework.projects.dir', value: "{{ rundeck_projects_dir }}" }
+    - { key: 'framework.var.dir', value: "{{ rundeck_base_dir }}/var" }
+    - { key: 'framework.tmp.dir', value: "{{ rundeck_tmp_dir }}" }
+    - { key: 'framework.logs.dir', value: "{{ rundeck_log_dir }}" }
+    - { key: 'framework.libext.dir', value: "{{ rundeck_plugins_dir }}" }
+    - { key: 'framework.ssh.keypath', value: "{{ rundeck_ssh_key_path }}" }
+    - { key: 'framework.ssh.user', value: "rundeck" }
+    - { key: 'framework.ssh.timeout', value: "{{ rundeck_ssh_timeout }}" }
   become: yes
   notify: Restart Rundeck
   tags:
     - rundeck
+    - rundeck-framework
 
-- name: Enable Rundeck service
-  service:
-    name: rundeckd
-    enabled: yes
-    state: started
+#=============================================================================
+# GUI CONFIGURATION
+#=============================================================================
+
+- name: Configure GUI settings
+  blockinfile:
+    path: /etc/rundeck/rundeck-config.properties
+    marker: "# {mark} ANSIBLE MANAGED - GUI CONFIGURATION"
+    block: |
+      # GUI Configuration
+      rundeck.gui.title = {{ rundeck_gui_title }}
+      rundeck.gui.staticUserResources.enabled = {{ rundeck_gui_static_user_resources_enabled | lower }}
+      rundeck.gui.execution.tail.lines.default = {{ rundeck_gui_execution_tail_lines }}
+      rundeck.gui.job.description.disableHTML = false
   become: yes
+  notify: Restart Rundeck
+  when: rundeck_gui_title is defined
   tags:
     - rundeck
+    - rundeck-gui
 
-- name: Wait for Rundeck to start
-  wait_for:
-    port: "{{ rundeck_port | default(4440) }}"
-    host: "{{ rundeck_address | default('127.0.0.1') }}"
-    timeout: 60
+- name: Configure custom branding
+  lineinfile:
+    path: /etc/rundeck/rundeck-config.properties
+    regexp: "^rundeck.gui.brand.html\\s*="
+    line: "rundeck.gui.brand.html = {{ rundeck_gui_brand_html }}"
+    state: present
+  become: yes
+  notify: Restart Rundeck
+  when: rundeck_gui_brand_html | length > 0
   tags:
     - rundeck
+    - rundeck-gui
+
+#=============================================================================
+# SESSION CONFIGURATION
+#=============================================================================
+
+- name: Configure session timeout
+  blockinfile:
+    path: /etc/rundeck/rundeck-config.properties
+    marker: "# {mark} ANSIBLE MANAGED - SESSION CONFIGURATION"
+    block: |
+      # Session Configuration
+      rundeck.security.httpHeaders.enabled = true
+      rundeck.security.csrf.referer.filterMethod = NONE
+  become: yes
+  notify: Restart Rundeck
+  tags:
+    - rundeck
+    - rundeck-security
+
+#=============================================================================
+# METRICS CONFIGURATION
+#=============================================================================
+
+- name: Configure metrics
+  blockinfile:
+    path: /etc/rundeck/rundeck-config.properties
+    marker: "# {mark} ANSIBLE MANAGED - METRICS CONFIGURATION"
+    block: |
+      # Metrics Configuration
+      rundeck.metrics.enabled = {{ rundeck_metrics_enabled | lower }}
+      rundeck.metrics.jmxEnabled = {{ rundeck_metrics_jmx_enabled | lower }}
+      rundeck.metrics.requestFilterEnabled = {{ rundeck_metrics_request_filter_enabled | lower }}
+  become: yes
+  notify: Restart Rundeck
+  when: rundeck_metrics_enabled | bool
+  tags:
+    - rundeck
+    - rundeck-metrics
+
+#=============================================================================
+# LOGGING CONFIGURATION
+#=============================================================================
+
+- name: Configure logging level
+  lineinfile:
+    path: /etc/rundeck/log4j2.properties
+    regexp: "^logger.rundeck.level\\s*="
+    line: "logger.rundeck.level = {{ rundeck_loglevel }}"
+    state: present
+  become: yes
+  notify: Restart Rundeck
+  tags:
+    - rundeck
+    - rundeck-logging
+
+- name: Configure audit logging
+  blockinfile:
+    path: /etc/rundeck/rundeck-config.properties
+    marker: "# {mark} ANSIBLE MANAGED - AUDIT CONFIGURATION"
+    block: |
+      # Audit Logging
+      rundeck.audit.enabled = {{ rundeck_audit_logging | lower }}
+  become: yes
+  notify: Restart Rundeck
+  when: rundeck_audit_logging | bool
+  tags:
+    - rundeck
+    - rundeck-logging
+
+#=============================================================================
+# STORAGE CONFIGURATION
+#=============================================================================
+
+- name: Configure storage settings
+  blockinfile:
+    path: /etc/rundeck/rundeck-config.properties
+    marker: "# {mark} ANSIBLE MANAGED - STORAGE CONFIGURATION"
+    block: |
+      # Key Storage Configuration
+      rundeck.storage.provider.1.type = {{ rundeck_storage_provider }}
+      rundeck.storage.provider.1.path = keys
+      rundeck.storage.provider.1.config.baseDir = {{ rundeck_storage_path }}
+  become: yes
+  notify: Restart Rundeck
+  tags:
+    - rundeck
+    - rundeck-storage
+
+#=============================================================================
+# JVM CONFIGURATION
+#=============================================================================
+
+- name: Configure JVM settings
+  lineinfile:
+    path: /etc/rundeck/profile
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  loop:
+    - { regexp: '^RDECK_JVM_SETTINGS=.*-Xmx', line: 'RDECK_JVM_SETTINGS="${RDECK_JVM_SETTINGS} -Xmx{{ rundeck_jvm_max_heap }} -Xms{{ rundeck_jvm_min_heap }}"' }
+  become: yes
+  notify: Restart Rundeck
+  tags:
+    - rundeck
+    - rundeck-jvm
+
+#=============================================================================
+# EMAIL NOTIFICATION CONFIGURATION
+#=============================================================================
+
+- name: Configure email notifications
+  blockinfile:
+    path: /etc/rundeck/rundeck-config.properties
+    marker: "# {mark} ANSIBLE MANAGED - EMAIL CONFIGURATION"
+    block: |
+      # Email Notification Configuration
+      grails.mail.host = {{ rundeck_mail_host }}
+      grails.mail.port = {{ rundeck_mail_port }}
+      grails.mail.default.from = {{ rundeck_mail_from }}
+  become: yes
+  notify: Restart Rundeck
+  when: rundeck_mail_enabled | bool
+  tags:
+    - rundeck
+    - rundeck-email
+
+#=============================================================================
+# USER AUTHENTICATION
+#=============================================================================
 
 - name: Configure Rundeck authentication
   block:
-    - name: Create Rundeck users file
-      copy:
-        content: |
-          {% for user in rundeck_users %}
-          {{ user.username }}:{{ user.password | default('rundeck') }}
-          {% endfor %}
+    - name: Create Rundeck realm.properties for file-based auth
+      template:
+        src: realm.properties.j2
         dest: /etc/rundeck/realm.properties
         owner: rundeck
         group: rundeck
         mode: '0600'
       become: yes
       notify: Restart Rundeck
-      when: rundeck_users is defined and rundeck_users | length > 0
+      when: 
+        - rundeck_auth_file_enabled | bool
+        - rundeck_users is defined
+        - rundeck_users | length > 0
   tags:
     - rundeck
+    - rundeck-auth
+
+#=============================================================================
+# SSH KEY CONFIGURATION
+#=============================================================================
 
 - name: Configure Rundeck SSH key
   block:
@@ -154,21 +412,98 @@
       become: yes
 
     - name: Generate Rundeck SSH key
-      command: ssh-keygen -t rsa -b 4096 -f /var/lib/rundeck/.ssh/id_rsa -N ""
+      command: ssh-keygen -t {{ rundeck_ssh_key_type }} -b {{ rundeck_ssh_key_bits }} -f {{ rundeck_ssh_key_path }} -N ""
       become: yes
       become_user: rundeck
       args:
-        creates: /var/lib/rundeck/.ssh/id_rsa
-  when: rundeck_ssh_key_generate | default(false)
+        creates: "{{ rundeck_ssh_key_path }}"
+
+    - name: Set SSH key permissions
+      file:
+        path: "{{ item.path }}"
+        owner: rundeck
+        group: rundeck
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ rundeck_ssh_key_path }}", mode: '0600' }
+        - { path: "{{ rundeck_ssh_key_path }}.pub", mode: '0644' }
+      become: yes
+  when: rundeck_ssh_key_generate | bool
   tags:
     - rundeck
+    - rundeck-ssh
+
+#=============================================================================
+# PLUGIN INSTALLATION
+#=============================================================================
+
+- name: Install Rundeck plugins
+  get_url:
+    url: "{{ item.url }}"
+    dest: "{{ rundeck_plugins_dir }}/{{ item.name }}"
+    owner: rundeck
+    group: rundeck
+    mode: '0644'
+  loop: "{{ rundeck_plugins_install }}"
+  become: yes
+  notify: Restart Rundeck
+  when: rundeck_plugins_install | length > 0
+  tags:
+    - rundeck
+    - rundeck-plugins
+
+#=============================================================================
+# SERVICE MANAGEMENT
+#=============================================================================
+
+- name: Enable and start Rundeck service
+  service:
+    name: rundeckd
+    enabled: yes
+    state: started
+  become: yes
+  tags:
+    - rundeck
+    - rundeck-service
+
+- name: Wait for Rundeck to start
+  wait_for:
+    port: "{{ rundeck_port }}"
+    host: "{{ rundeck_address }}"
+    timeout: 120
+  tags:
+    - rundeck
+    - rundeck-service
+
+#=============================================================================
+# VERIFICATION
+#=============================================================================
 
 - name: Verify Rundeck installation
   uri:
-    url: "http://{{ rundeck_address | default('127.0.0.1') }}:{{ rundeck_port | default(4440) }}/api/1/system/info"
+    url: "http://{{ rundeck_address }}:{{ rundeck_port }}/api/1/system/info"
     method: GET
-    status_code: 200
+    status_code: [200, 403]
+    timeout: 30
   register: rundeck_verify
   changed_when: false
+  retries: 3
+  delay: 10
   tags:
     - rundeck
+    - rundeck-verify
+
+- name: Display Rundeck status
+  debug:
+    msg: |
+      Rundeck is running:
+      - URL: {{ rundeck_grails_url }}
+      - Port: {{ rundeck_port }}
+      - Database: {{ rundeck_database_backend }}
+      {% if rundeck_database_backend == 'postgresql' %}
+      - DB Host: {{ rundeck_db_host }}:{{ rundeck_db_port }}
+      - DB Name: {{ rundeck_db_name }}
+      {% endif %}
+  tags:
+    - rundeck
+    - rundeck-verify

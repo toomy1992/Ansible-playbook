@@ -1,0 +1,127 @@
+---
+# PostgreSQL role defaults for Rundeck database
+# Documentation: https://docs.rundeck.com/docs/administration/configuration/database/postgres.html
+
+#=============================================================================
+# POSTGRESQL VERSION
+#=============================================================================
+
+# PostgreSQL version (latest stable LTS)
+rundeck_postgres_version: 16
+
+#=============================================================================
+# DATABASE CONFIGURATION
+# These match the rundeck role variables for seamless integration
+#=============================================================================
+
+# Database name, user, and password
+# Note: These defaults match rundeck role's rundeck_db_* variables
+rundeck_postgres_db_name: "{{ rundeck_db_name | default('rundeck') }}"
+rundeck_postgres_db_user: "{{ rundeck_db_user | default('rundeckuser') }}"
+rundeck_postgres_db_password: "{{ rundeck_db_password | default(vault_rundeck_db_password | default('rundeckpassword')) }}"
+
+#=============================================================================
+# CONNECTION SETTINGS
+#=============================================================================
+
+# PostgreSQL host and port
+rundeck_postgres_host: "{{ rundeck_db_host | default('localhost') }}"
+rundeck_postgres_port: "{{ rundeck_db_port | default(5432) }}"
+
+# PostgreSQL listen addresses
+# - 'localhost' for local connections only (default, most secure)
+# - '*' to listen on all interfaces (use with caution)
+rundeck_postgres_listen_addresses: "localhost"
+
+# PostgreSQL authentication method
+# Options: md5, scram-sha-256, trust (never use trust in production)
+rundeck_postgres_auth_method: "scram-sha-256"
+
+#=============================================================================
+# PERFORMANCE TUNING
+# Adjust based on available server resources
+#=============================================================================
+
+# Maximum number of concurrent connections
+rundeck_postgres_max_connections: 100
+
+# Shared buffers (recommend 25% of total RAM, max 8GB)
+rundeck_postgres_shared_buffers: "256MB"
+
+# Work memory per operation (recommend 4MB-64MB)
+rundeck_postgres_work_mem: "4MB"
+
+# Effective cache size (recommend 50-75% of total RAM)
+rundeck_postgres_effective_cache_size: "512MB"
+
+# Maintenance work memory (for VACUUM, CREATE INDEX, etc.)
+rundeck_postgres_maintenance_work_mem: "64MB"
+
+# Checkpoint completion target (0.5-0.9, higher = smoother I/O)
+rundeck_postgres_checkpoint_completion_target: 0.9
+
+# WAL buffers
+rundeck_postgres_wal_buffers: "16MB"
+
+# Random page cost (1.1-4.0, lower for SSD)
+rundeck_postgres_random_page_cost: 1.1
+
+#=============================================================================
+# AUTHENTICATION (pg_hba.conf)
+#=============================================================================
+
+# pg_hba.conf entries for Rundeck access
+rundeck_postgres_hba_entries:
+  - type: local
+    database: all
+    user: postgres
+    auth_method: peer
+  - type: local
+    database: "{{ rundeck_postgres_db_name }}"
+    user: "{{ rundeck_postgres_db_user }}"
+    auth_method: "{{ rundeck_postgres_auth_method }}"
+  - type: host
+    database: "{{ rundeck_postgres_db_name }}"
+    user: "{{ rundeck_postgres_db_user }}"
+    address: "127.0.0.1/32"
+    auth_method: "{{ rundeck_postgres_auth_method }}"
+  - type: host
+    database: "{{ rundeck_postgres_db_name }}"
+    user: "{{ rundeck_postgres_db_user }}"
+    address: "::1/128"
+    auth_method: "{{ rundeck_postgres_auth_method }}"
+
+#=============================================================================
+# LOGGING CONFIGURATION
+#=============================================================================
+
+# Enable PostgreSQL query logging
+rundeck_postgres_logging: true
+
+# Log statement type: 'none', 'ddl', 'mod', 'all'
+rundeck_postgres_log_statement: "none"
+
+# Log queries taking longer than X milliseconds (0 = disabled)
+rundeck_postgres_log_min_duration_statement: 1000
+
+#=============================================================================
+# BACKUP CONFIGURATION
+#=============================================================================
+
+# Enable automated database backups
+rundeck_postgres_backup_enabled: true
+
+# Backup directory
+rundeck_postgres_backup_dir: "/var/backups/postgresql"
+
+# Backup retention period in days
+rundeck_postgres_backup_retention_days: 7
+
+#=============================================================================
+# SSL CONFIGURATION (optional)
+#=============================================================================
+
+# Enable SSL for PostgreSQL connections
+rundeck_postgres_ssl_enabled: false
+rundeck_postgres_ssl_cert_file: ""
+rundeck_postgres_ssl_key_file: ""

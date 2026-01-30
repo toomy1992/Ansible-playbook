@@ -1,0 +1,263 @@
+---
+# PostgreSQL installation and configuration for Rundeck
+# Based on Rundeck documentation: https://docs.rundeck.com/docs/administration/configuration/database/postgres.html
+
+- name: Install PostgreSQL dependencies
+  ansible.builtin.apt:
+    name:
+      - gnupg2
+      - lsb-release
+      - python3-psycopg2
+      - acl
+    state: present
+    update_cache: yes
+  become: yes
+  tags:
+    - rundeck-postgres
+
+- name: Add PostgreSQL APT repository key
+  ansible.builtin.apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+  become: yes
+  tags:
+    - rundeck-postgres
+
+- name: Add PostgreSQL APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+    state: present
+    filename: pgdg
+  become: yes
+  tags:
+    - rundeck-postgres
+
+- name: Install PostgreSQL {{ rundeck_postgres_version }}
+  ansible.builtin.apt:
+    name:
+      - "postgresql-{{ rundeck_postgres_version }}"
+      - "postgresql-contrib-{{ rundeck_postgres_version }}"
+      - "postgresql-client-{{ rundeck_postgres_version }}"
+    state: present
+    update_cache: yes
+  become: yes
+  tags:
+    - rundeck-postgres
+
+- name: Ensure PostgreSQL service is started and enabled
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+    enabled: yes
+  become: yes
+  tags:
+    - rundeck-postgres
+
+- name: Wait for PostgreSQL to be ready
+  ansible.builtin.wait_for:
+    port: "{{ rundeck_postgres_port }}"
+    host: "{{ rundeck_postgres_listen_addresses }}"
+    timeout: 30
+  tags:
+    - rundeck-postgres
+
+- name: Configure PostgreSQL listen addresses
+  ansible.builtin.lineinfile:
+    path: /etc/postgresql/{{ rundeck_postgres_version }}/main/postgresql.conf
+    regexp: "^#?listen_addresses"
+    line: "listen_addresses = '{{ rundeck_postgres_listen_addresses }}'"
+    state: present
+  become: yes
+  notify: Restart PostgreSQL
+  tags:
+    - rundeck-postgres
+
+- name: Configure PostgreSQL port
+  ansible.builtin.lineinfile:
+    path: /etc/postgresql/{{ rundeck_postgres_version }}/main/postgresql.conf
+    regexp: "^#?port"
+    line: "port = {{ rundeck_postgres_port }}"
+    state: present
+  become: yes
+  notify: Restart PostgreSQL
+  tags:
+    - rundeck-postgres
+
+- name: Configure PostgreSQL max connections
+  ansible.builtin.lineinfile:
+    path: /etc/postgresql/{{ rundeck_postgres_version }}/main/postgresql.conf
+    regexp: "^#?max_connections"
+    line: "max_connections = {{ rundeck_postgres_max_connections }}"
+    state: present
+  become: yes
+  notify: Restart PostgreSQL
+  tags:
+    - rundeck-postgres
+
+- name: Configure PostgreSQL shared buffers
+  ansible.builtin.lineinfile:
+    path: /etc/postgresql/{{ rundeck_postgres_version }}/main/postgresql.conf
+    regexp: "^#?shared_buffers"
+    line: "shared_buffers = {{ rundeck_postgres_shared_buffers }}"
+    state: present
+  become: yes
+  notify: Restart PostgreSQL
+  tags:
+    - rundeck-postgres
+
+- name: Configure PostgreSQL work memory
+  ansible.builtin.lineinfile:
+    path: /etc/postgresql/{{ rundeck_postgres_version }}/main/postgresql.conf
+    regexp: "^#?work_mem"
+    line: "work_mem = {{ rundeck_postgres_work_mem }}"
+    state: present
+  become: yes
+  notify: Restart PostgreSQL
+  tags:
+    - rundeck-postgres
+
+- name: Configure PostgreSQL effective cache size
+  ansible.builtin.lineinfile:
+    path: /etc/postgresql/{{ rundeck_postgres_version }}/main/postgresql.conf
+    regexp: "^#?effective_cache_size"
+    line: "effective_cache_size = {{ rundeck_postgres_effective_cache_size }}"
+    state: present
+  become: yes
+  notify: Restart PostgreSQL
+  tags:
+    - rundeck-postgres
+
+- name: Configure PostgreSQL logging
+  ansible.builtin.blockinfile:
+    path: /etc/postgresql/{{ rundeck_postgres_version }}/main/postgresql.conf
+    marker: "# {mark} ANSIBLE MANAGED - LOGGING"
+    block: |
+      # Logging configuration for Rundeck
+      logging_collector = on
+      log_directory = 'log'
+      log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+      log_rotation_age = 1d
+      log_rotation_size = 100MB
+      log_statement = '{{ rundeck_postgres_log_statement }}'
+      log_min_duration_statement = {{ rundeck_postgres_log_min_duration_statement }}
+  become: yes
+  when: rundeck_postgres_logging | bool
+  notify: Restart PostgreSQL
+  tags:
+    - rundeck-postgres
+
+- name: Flush handlers to apply PostgreSQL config changes
+  ansible.builtin.meta: flush_handlers
+
+- name: Create Rundeck database
+  community.postgresql.postgresql_db:
+    name: "{{ rundeck_postgres_db_name }}"
+    state: present
+    encoding: UTF8
+    lc_collate: en_US.UTF-8
+    lc_ctype: en_US.UTF-8
+    template: template0
+  become: yes
+  become_user: postgres
+  tags:
+    - rundeck-postgres
+
+- name: Create Rundeck database user
+  community.postgresql.postgresql_user:
+    name: "{{ rundeck_postgres_db_user }}"
+    password: "{{ rundeck_postgres_db_password }}"
+    state: present
+    role_attr_flags: LOGIN,NOSUPERUSER,NOCREATEDB,NOCREATEROLE
+  become: yes
+  become_user: postgres
+  no_log: true
+  tags:
+    - rundeck-postgres
+
+- name: Grant all privileges on Rundeck database to user
+  community.postgresql.postgresql_privs:
+    database: "{{ rundeck_postgres_db_name }}"
+    state: present
+    privs: ALL
+    type: database
+    role: "{{ rundeck_postgres_db_user }}"
+  become: yes
+  become_user: postgres
+  tags:
+    - rundeck-postgres
+
+- name: Grant schema privileges to Rundeck user
+  community.postgresql.postgresql_privs:
+    database: "{{ rundeck_postgres_db_name }}"
+    state: present
+    privs: ALL
+    type: schema
+    objs: public
+    role: "{{ rundeck_postgres_db_user }}"
+  become: yes
+  become_user: postgres
+  tags:
+    - rundeck-postgres
+
+- name: Configure pg_hba.conf for Rundeck user
+  community.postgresql.postgresql_pg_hba:
+    dest: /etc/postgresql/{{ rundeck_postgres_version }}/main/pg_hba.conf
+    contype: "{{ item.type }}"
+    databases: "{{ item.database }}"
+    users: "{{ item.user }}"
+    address: "{{ item.address | default(omit) }}"
+    method: "{{ item.auth_method }}"
+    state: present
+  loop: "{{ rundeck_postgres_hba_entries }}"
+  become: yes
+  notify: Reload PostgreSQL
+  tags:
+    - rundeck-postgres
+
+- name: Create backup directory
+  ansible.builtin.file:
+    path: "{{ rundeck_postgres_backup_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0750'
+  become: yes
+  when: rundeck_postgres_backup_enabled | bool
+  tags:
+    - rundeck-postgres
+
+- name: Create Rundeck database backup script
+  ansible.builtin.template:
+    src: backup_rundeck_db.sh.j2
+    dest: /usr/local/bin/backup_rundeck_db.sh
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+  when: rundeck_postgres_backup_enabled | bool
+  tags:
+    - rundeck-postgres
+
+- name: Schedule daily database backup
+  ansible.builtin.cron:
+    name: "Rundeck PostgreSQL backup"
+    minute: "0"
+    hour: "2"
+    job: "/usr/local/bin/backup_rundeck_db.sh >> /var/log/rundeck_backup.log 2>&1"
+    user: postgres
+    state: "{{ 'present' if rundeck_postgres_backup_enabled else 'absent' }}"
+  become: yes
+  tags:
+    - rundeck-postgres
+
+- name: Display PostgreSQL connection info
+  ansible.builtin.debug:
+    msg: |
+      PostgreSQL for Rundeck configured:
+      - Host: {{ rundeck_postgres_host }}
+      - Port: {{ rundeck_postgres_port }}
+      - Database: {{ rundeck_postgres_db_name }}
+      - User: {{ rundeck_postgres_db_user }}
+      - JDBC URL: jdbc:postgresql://{{ rundeck_postgres_host }}:{{ rundeck_postgres_port }}/{{ rundeck_postgres_db_name }}
+  tags:
+    - rundeck-postgres

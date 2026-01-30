@@ -1,4 +1,4 @@
-﻿# Ansible Complete Infrastructure Framework
+# Ansible Complete Infrastructure Framework
 
 **Professional automation for system configuration, security hardening, and monitoring across Ubuntu/Debian servers.**
 
@@ -6,56 +6,93 @@ A production-ready Ansible framework with **22 comprehensive roles** organized a
 
 ---
 
-## 📋 Quick Navigation
+## Table of Contents
 
-- **[START_HERE.md](START_HERE.md)** - First-time setup (read this first!)
-- **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Detailed VM initialization guide
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete system design
-- **[docs/](docs/)** - Additional guides and reference materials
+- [Quick Start](#-quick-start)
+- [Framework Architecture](#-framework-architecture)
+- [Project Structure](#-project-structure)
+- [Role Reference](#-role-reference)
+- [Playbook Reference](#-playbook-reference)
+- [Configuration](#-configuration--variables)
+- [Docker Setup](#-docker-setup)
+- [Rundeck Setup](#-rundeck-setup)
+- [Security Stack](#-security-stack)
+- [Monitoring Stack](#-monitoring-stack)
+- [Troubleshooting](#-troubleshooting)
+- [Command Reference](#-command-reference)
 
 ---
 
 ## 🚀 Quick Start
 
-### For Fresh VM Deployment
+### Setup in 4 Steps (Fresh VM)
 
-**Step 1: Prepare Configuration** (5 minutes)
-```bash
-# Get your SSH public key
+#### Step 1: Get Your SSH Public Key (1 minute)
+\`\`\`bash
 cat ~/.ssh/id_ed25519.pub
+# Copy this entire output
+\`\`\`
 
-# Edit and add your SSH key to:
-nano group_vars/users.yml
+#### Step 2: Update Configuration (2 minutes)
 
-# Update VM IP address in:
-nano inventory/sample_inventory.yml
-```
+**Edit:** \`group_vars/users.yml\`
+\`\`\`yaml
+ops_users:
+  - name: John
+    ssh_keys:
+      - "ssh-ed25519 AAAA... John@workstation"  # ← PASTE YOUR KEY HERE
+\`\`\`
 
-**Step 2: Run Setup Playbook** (2-3 minutes)
-```bash
-# Initialize fresh Ubuntu VM
-# Creates automation user, hardens SSH, configures users
-ansible-playbook playbooks/setup.yml \
-  -i inventory/sample_inventory.yml \
-  -u initial_os_user \
-  -k \
+**Edit:** \`inventory/sample_inventory.yml\`
+\`\`\`yaml
+common_ubuntu:
+  hosts:
+    common-01:
+      ansible_host: 192.168.X.X  # ← YOUR VM IP HERE
+\`\`\`
+
+#### Step 3: Run Setup Playbook (2-3 minutes)
+\`\`\`bash
+ansible-playbook playbooks/setup.yml \\
+  -i inventory/sample_inventory.yml \\
+  -u John \\
+  -k \\
   --ask-become-pass
-```
+\`\`\`
 
-**Step 3: Verify & Deploy** (10-15 minutes)
-```bash
-# Test connectivity
+When prompted:
+- SSH password: (John's password from VM installation)
+- Become password: (usually same as SSH password)
+
+#### Step 4: Verify & Deploy (5-10 minutes)
+\`\`\`bash
+# Verify setup worked
 ansible all -i inventory/sample_inventory.yml -m ping
 
-# Deploy full infrastructure (5-10 minutes)
+# Deploy full configuration
 ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
-```
+\`\`\`
 
-**Total Time**: ~20 minutes from fresh VM to production-ready infrastructure
+**Done!** You now have a fully configured production server! 🎉
+
+### What Happens During Setup
+
+\`\`\`
+Fresh VM (John + password auth)
+          ↓
+    [setup.yml runs]
+          ↓
+Creates: ansible user (uid 1000)
+Configures: SSH keys for John
+Hardens: SSH (disables password auth)
+Enables: Passwordless sudo for ansible
+          ↓
+Ready for Automation ✅
+\`\`\`
 
 ### For Existing Infrastructure
 
-```bash
+\`\`\`bash
 # Deploy all roles
 ansible-playbook playbooks/site.yml
 
@@ -69,7 +106,7 @@ ansible-playbook playbooks/site.yml --tags=docker,prometheus,ssh
 
 # Dry-run (check mode, no changes)
 ansible-playbook playbooks/site.yml --check
-```
+\`\`\`
 
 ---
 
@@ -77,392 +114,1146 @@ ansible-playbook playbooks/site.yml --check
 
 ### 4 Implementation Layers
 
-```
+\`\`\`
 ┌──────────────────────────────────────────────────────┐
 │  ESSENTIALS (9 roles)                                │
 │  APT  Packages  Users  SSH  Timezone  Hostname       │
 │  Firewall  Mail  Updates  User Ops                   │
 ├──────────────────────────────────────────────────────┤
 │  APPS & SERVICES (2 roles)                           │
-│  Docker (separate from Rundeck)                      │
-│  Rundeck (separate from Docker)                      │
+│  Docker    Rundeck                                   │
 ├──────────────────────────────────────────────────────┤
 │  SECURITY (4 roles)                                  │
 │  AppArmor  OSSEC  Maldet  Lynis                      │
 ├──────────────────────────────────────────────────────┤
 │  MONITORING (7 roles)                                │
 │  Loki  Prometheus  Grafana Agent  Alertmanager       │
-│  Log Rotation  Monit  Dashboard                      │
+│  Log Rotation  Monit                                 │
 └──────────────────────────────────────────────────────┘
-```
+\`\`\`
 
-### 22 Total Roles
+### Execution Flow
 
-**Essentials (9)**:
-- APT - Repository and package management
-- Packages - Install essential utilities
-- User Accounts - User and group management
-- Users Ops - Operational users with SSH keys
-- SSH - SSH hardening and key-only authentication
-- Timezone - System time and NTP synchronization
-- Hostname - Host identity configuration
-- Firewall - UFW-based firewall rules
-- Mail - Postfix mail service
-- Updates - Automatic security updates
-
-**Apps & Services (2)**:
-- Docker - Docker CE and Docker Compose
-- Rundeck - Runbook automation platform
-
-**Security (4)**:
-- AppArmor - Mandatory Access Control (MAC)
-- Integrity Monitoring - OSSEC v3.7.0
-- Malware Scanning - Maldet
-- Security Audits - Lynis compliance
-
-**Monitoring (7)**:
-- Log Rotation - Logrotate configuration
-- Loki - Log aggregation (port 3100)
-- Prometheus - Metrics storage (port 9090)
-- Grafana Agent - Data collection and shipping
-- Alertmanager - Alert routing (port 9093)
-- Monit - Service monitoring (port 2812)
-- Dashboard - Visualization platform
-
----
-
-## 📦 Key Components
-
-### Automation User Creation
-- Automatic `automation` user created (configurable name)
-- Passwordless sudo access
-- SSH key-based authentication
-- Ready for playbook execution
-
-### SSH Hardening
-- Password authentication: **DISABLED**
-- Root login: **DISABLED**
-- Key exchange: Hardened algorithms
-- Ciphers: Strong cryptography
-- Applied during setup.yml
+\`\`\`
+START
+  │
+  ├─► setup.yml (FRESH VM ONLY)
+  │    ├─► Create ansible user
+  │    ├─► Configure SSH keys
+  │    └─► Harden SSH
+  │
+  ├─► site.yml (FULL DEPLOYMENT)
+  │    ├─► Essentials (9 roles)
+  │    ├─► Apps & Services (2 roles)
+  │    ├─► Security (4 roles)
+  │    └─► Monitoring (7 roles)
+  │
+  END ✅
+\`\`\`
 
 ### Host Groups
 
-```yaml
-all:
-  children:
-    common_ubuntu:        # Basic infrastructure
-    docker_hosts:         # Container platforms
-    rundeck_hosts:        # Automation servers (NO Docker)
-    ubuntu_desktop:       # Workstations
-```
+| Group | Purpose | Docker | Rundeck |
+|-------|---------|--------|---------|
+| \`common_ubuntu\` | Basic infrastructure | ❌ | ❌ |
+| \`docker_hosts\` | Container platforms | ✅ | ❌ |
+| \`rundeck_hosts\` | Automation servers | ❌ | ✅ |
+| \`ubuntu_desktop\` | Workstations | ✅ | ❌ |
 
-### Monitoring Integration
-
-```
-System Logs → Grafana Agent → Loki (3100)
-System Metrics → Grafana Agent → Prometheus (9090)
-Alert Rules → Alertmanager (9093) → Notifications
-Services → Monit (2812) → Auto-restart
-```
+**Critical**: Docker and Rundeck never run on the same host.
 
 ---
 
-## 🎭 Available Playbooks
+## 📂 Project Structure
+
+\`\`\`
+Ansible-playbook/
+│
+├── 📝 playbooks/
+│   ├── site.yml                 # Full deployment (all 22 roles)
+│   ├── setup.yml                # Fresh VM initialization
+│   ├── docker-hosts.yml         # Docker servers
+│   ├── rundeck-hosts.yml        # Rundeck servers
+│   ├── common-hosts.yml         # Basic servers
+│   ├── desktop-hosts.yml        # Workstations
+│   ├── essentials.yml           # Core roles only
+│   ├── security-full.yml        # All security roles
+│   ├── monitoring-full.yml      # All monitoring roles
+│   ├── security.yml             # SSH + Firewall
+│   ├── updates.yml              # APT + Updates
+│   ├── system.yml               # Hostname + Timezone
+│   ├── apps.yml                 # Docker + Rundeck
+│   └── diagnostic.yml           # Validation
+│
+├── 🎭 roles/
+│   ├── apt/                     # APT & repositories
+│   ├── packages/                # Essential packages
+│   ├── user_accounts/           # Users & groups
+│   ├── users_ops/               # Operational users
+│   ├── ssh/                     # SSH hardening
+│   ├── timezone/                # Timezone & NTP
+│   ├── hostname/                # Hostname config
+│   ├── firewall/                # UFW rules
+│   ├── mail/                    # Postfix service
+│   ├── updates/                 # Auto updates
+│   ├── docker/                  # Container platform
+│   ├── rundeck/                 # Runbook automation
+│   ├── apparmor/                # MAC profiles
+│   ├── integrity_monitoring/    # OSSEC
+│   ├── malware_scanning/        # Maldet
+│   ├── security_audits/         # Lynis
+│   ├── log_rotation/            # Logrotate
+│   ├── loki/                    # Log aggregation
+│   ├── prometheus/              # Metrics storage
+│   ├── grafana_agent/           # Data collection
+│   ├── alertmanager/            # Alert routing
+│   └── monit/                   # Service monitoring
+│
+├── 📂 inventory/
+│   ├── sample_inventory.yml     # Host definitions
+│   └── README.md                # Inventory guide
+│
+├── 📂 group_vars/
+│   ├── all.yml                  # Global variables
+│   ├── users.yml                # User definitions
+│   └── vault.yml                # Encrypted secrets
+│
+├── 📂 docs/
+│   ├── QUICK_REFERENCE_CARD.md  # Command reference
+│   ├── WORKFLOW.md              # Workflow diagrams
+│   ├── PRE_FLIGHT_CHECKLIST.md  # Verification items
+│   └── README.md                # Documentation index
+│
+└── ansible.cfg                  # Ansible configuration
+\`\`\`
+
+---
+
+## 🎭 Role Reference
+
+### Essentials (9 Roles)
+
+| Role | Tag | Purpose |
+|------|-----|---------|
+| **apt** | \`apt\` | APT repository and package cache management |
+| **packages** | \`packages\` | Essential packages installation (curl, vim, htop, etc.) |
+| **user_accounts** | \`users\` | User and group management |
+| **users_ops** | \`users-ops\` | Operational users with SSH keys |
+| **ssh** | \`ssh\` | SSH configuration and hardening |
+| **timezone** | \`timezone\` | System timezone and NTP synchronization |
+| **hostname** | \`hostname\` | Hostname and hosts file configuration |
+| **firewall** | \`firewall\` | UFW firewall rules management |
+| **mail** | \`mail\` | Postfix mail service setup |
+| **updates** | \`updates\` | Unattended security updates |
+
+### Apps & Services (2 Roles)
+
+| Role | Tag | Purpose |
+|------|-----|---------|
+| **docker** | \`docker\` | Docker CE, CLI, Compose installation |
+| **rundeck** | \`rundeck\` | Runbook automation platform (port 4440) |
+
+### Security (4 Roles)
+
+| Role | Tag | Purpose |
+|------|-----|---------|
+| **apparmor** | \`apparmor\` | Mandatory Access Control (MAC) profiles |
+| **integrity_monitoring** | \`integrity-monitoring\` | OSSEC file integrity monitoring |
+| **malware_scanning** | \`malware-scanning\` | Maldet daily malware detection |
+| **security_audits** | \`security-audits\` | Lynis compliance auditing |
+
+### Monitoring (7 Roles)
+
+| Role | Tag | Purpose | Port |
+|------|-----|---------|------|
+| **log_rotation** | \`log-rotation\` | Logrotate configuration | - |
+| **loki** | \`loki\` | Log aggregation and storage | 3100 |
+| **prometheus** | \`prometheus\` | Metrics storage and querying | 9090 |
+| **grafana_agent** | \`grafana-agent\` | Log/metrics collection and shipping | - |
+| **alertmanager** | \`alertmanager\` | Alert routing and notifications | 9093 |
+| **monit** | \`monit\` | Service monitoring and auto-restart | 2812 |
+
+---
+
+## 📝 Playbook Reference
 
 ### Primary Playbooks
-- **site.yml** - Complete deployment (all 22 roles)
-- **setup.yml** - Fresh VM initialization
+
+\`\`\`bash
+# Complete deployment (all 22 roles)
+ansible-playbook playbooks/site.yml
+
+# Fresh VM initialization
+ansible-playbook playbooks/setup.yml -u John -k --ask-become-pass
+\`\`\`
 
 ### Group-Specific Playbooks
-- **docker-hosts.yml** - Docker servers
-- **rundeck-hosts.yml** - Rundeck servers
-- **common-hosts.yml** - Basic servers
-- **desktop-hosts.yml** - Workstations
+
+\`\`\`bash
+# Docker servers
+ansible-playbook playbooks/docker-hosts.yml
+
+# Rundeck servers  
+ansible-playbook playbooks/rundeck-hosts.yml
+
+# Basic servers
+ansible-playbook playbooks/common-hosts.yml
+
+# Workstations
+ansible-playbook playbooks/desktop-hosts.yml
+\`\`\`
 
 ### Focused Playbooks
-- **essentials.yml** - Core infrastructure
-- **security-full.yml** - All security roles
-- **monitoring-full.yml** - All monitoring roles
-- **updates.yml** - System updates
-- **apps.yml** - Applications
+
+\`\`\`bash
+# Core infrastructure only
+ansible-playbook playbooks/essentials.yml
+
+# All security roles
+ansible-playbook playbooks/security-full.yml
+
+# All monitoring roles
+ansible-playbook playbooks/monitoring-full.yml
+
+# SSH + Firewall only
+ansible-playbook playbooks/security.yml
+
+# System updates
+ansible-playbook playbooks/updates.yml
+
+# Docker + Rundeck
+ansible-playbook playbooks/apps.yml
+\`\`\`
+
+### Tag-Based Deployment
+
+\`\`\`bash
+# Single role
+ansible-playbook playbooks/site.yml --tags=docker
+
+# Multiple roles
+ansible-playbook playbooks/site.yml --tags=ssh,firewall,prometheus
+
+# Skip roles
+ansible-playbook playbooks/site.yml --skip-tags=mail,rundeck
+
+# All security
+ansible-playbook playbooks/site.yml --tags=security
+
+# All monitoring
+ansible-playbook playbooks/site.yml --tags=monitoring
+\`\`\`
 
 ---
 
-## 🔐 Security Features
+## ⚙️ Configuration & Variables
 
-### Authentication
-- SSH key-only authentication
-- Passwordless sudo for automation user
-- Initial password auth for setup (temporary)
-- Vault encryption for sensitive data
+### Variables Hierarchy
 
-### Access Control
-- User and group management
-- Sudo configuration
-- SSH key deployment
-- Permission management
+\`\`\`
+ansible.cfg (global config)
+    ↓
+group_vars/
+    ├── all.yml              (ALL HOSTS - primary)
+    └── users.yml            (User definitions)
+    ↓
+host_vars/
+    └── hostname.yml         (Individual host overrides)
+\`\`\`
 
-### Hardening
-- AppArmor MAC policies
-- OSSEC file integrity monitoring
-- Maldet malware scanning
-- Lynis compliance auditing
+### Key Configuration Files
 
-### Monitoring
-- Daily security scans
-- Email alerts
-- Compliance reports
-- Automated remediation
+#### group_vars/all.yml
+\`\`\`yaml
+# System
+system_timezone: UTC
+system_hostname: server1
+
+# SSH
+ssh_port: 22
+ssh_permit_root_login: 'no'
+ssh_password_auth: 'no'
+
+# Firewall
+firewall_rules: []
+
+# Docker
+docker_users: [ansible]
+docker_compose_install: true
+
+# Rundeck
+rundeck_grails_url: http://localhost:4440
+rundeck_port: 4440
+
+# Monitoring
+prometheus_retention_time: 30d
+loki_retention_days: 30
+\`\`\`
+
+#### group_vars/users.yml
+\`\`\`yaml
+ops_users:
+  - name: John
+    ssh_keys:
+      - "ssh-ed25519 AAAA... John@workstation"
+    groups: [sudo, docker]
+\`\`\`
+
+#### inventory/sample_inventory.yml
+\`\`\`yaml
+all:
+  children:
+    common_ubuntu:
+      hosts:
+        common-01:
+          ansible_host: 192.168.1.100
+    docker_hosts:
+      hosts:
+        docker-01:
+          ansible_host: 192.168.1.110
+    rundeck_hosts:
+      hosts:
+        rundeck-01:
+          ansible_host: 192.168.1.120
+    ubuntu_desktop:
+      hosts:
+        desktop-01:
+          ansible_host: 192.168.1.130
+\`\`\`
+
+---
+
+## 🐳 Docker Setup
+
+### Features
+- Official Docker repository setup
+- Docker CE, Docker CLI, and containerd installation
+- Docker Compose (latest version)
+- Service enablement and startup
+- Docker group and user management
+- Daemon configuration (logging, live restore)
+
+### Configuration
+
+\`\`\`yaml
+# group_vars/all.yml
+docker_users:
+  - ansible
+  - ubuntu
+
+docker_log_driver: json-file
+docker_log_max_size: 10m
+docker_log_max_file: 3
+docker_live_restore: true
+docker_userland_proxy: false
+docker_compose_install: true
+\`\`\`
+
+### Deployment
+
+\`\`\`bash
+# Install Docker
+ansible-playbook playbooks/site.yml --tags=docker
+
+# Or use apps playbook
+ansible-playbook playbooks/apps.yml --tags=docker
+\`\`\`
+
+### Verification
+
+\`\`\`bash
+# On remote host
+docker --version
+docker-compose --version
+docker run hello-world
+\`\`\`
+
+---
+
+## 🔧 Rundeck Setup
+
+> **Documentation Reference**: [Rundeck Configuration](https://docs.rundeck.com/docs/administration/configuration/)
+
+### Overview
+
+This framework deploys **Rundeck Open Source** with:
+- OpenJDK 11 (required runtime)
+- PostgreSQL 16 database backend (production-ready)
+- Official Rundeck APT repository
+- Comprehensive configuration management
+- SSH key generation for remote node execution
+- Security hardening and monitoring integration
+
+### Architecture
+
+\`\`\`
+┌──────────────────────────────────────────────────────────┐
+│                    RUNDECK HOST                          │
+├──────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐    ┌─────────────────┐              │
+│  │   PostgreSQL    │◄───│    Rundeck      │              │
+│  │   (Port 5432)   │    │   (Port 4440)   │              │
+│  └─────────────────┘    └────────┬────────┘              │
+│                                  │                       │
+│  Configuration Files:            │  SSH Keys:            │
+│  /etc/rundeck/                   │  /var/lib/rundeck/    │
+│  ├── rundeck-config.properties   │  └── .ssh/id_rsa      │
+│  ├── framework.properties        │                       │
+│  └── realm.properties            │                       │
+└──────────────────────────────────┴───────────────────────┘
+                                   │
+                                   ▼
+                    ┌──────────────────────────┐
+                    │     Remote Nodes         │
+                    │  (SSH execution targets) │
+                    └──────────────────────────┘
+\`\`\`
+
+### Configuration Files (DEB/RPM Layout)
+
+| File | Purpose |
+|------|---------|
+| \`/etc/rundeck/rundeck-config.properties\` | Primary configuration (server, database, security) |
+| \`/etc/rundeck/framework.properties\` | Framework paths, SSH settings, global variables |
+| \`/etc/rundeck/realm.properties\` | File-based user authentication |
+| \`/etc/rundeck/jaas-loginmodule.conf\` | JAAS authentication configuration |
+| \`/etc/rundeck/log4j2.properties\` | Logging configuration |
+| \`/etc/rundeck/profile\` | JVM and environment settings |
+
+### Quick Start
+
+#### 1. Create Vault for Secrets
+
+\`\`\`bash
+# Create encrypted vault file
+ansible-vault create group_vars/vault.yml
+\`\`\`
+
+Add these variables:
+\`\`\`yaml
+---
+vault_rundeck_db_password: "secure-database-password"
+vault_rundeck_admin_password: "secure-admin-password"
+vault_rundeck_operator_password: "secure-operator-password"
+\`\`\`
+
+#### 2. Configure Inventory
+
+Use the template at \`inventory/rundeck_inventory.yml\` or create your own:
+
+\`\`\`yaml
+# inventory/my_rundeck.yml
+all:
+  children:
+    rundeck_hosts:
+      hosts:
+        rundeck-01:
+          ansible_host: 192.168.1.100
+          ansible_user: ansible
+      vars:
+        # Required: Database password
+        rundeck_db_password: "{{ vault_rundeck_db_password }}"
+        
+        # Server URL (change for external access)
+        rundeck_grails_url: "http://192.168.1.100:4440"
+        rundeck_address: "0.0.0.0"  # Allow external connections
+        
+        # Users
+        rundeck_users:
+          - username: admin
+            password: "{{ vault_rundeck_admin_password }}"
+            roles: "admin,user"
+\`\`\`
+
+#### 3. Deploy Rundeck
+
+\`\`\`bash
+# Deploy with vault password
+ansible-playbook playbooks/rundeck-hosts.yml \\
+  -i inventory/my_rundeck.yml \\
+  --ask-vault-pass
+\`\`\`
+
+#### 4. Access Rundeck
+
+\`\`\`
+URL: http://your-server:4440
+Login: admin / (your vault password)
+\`\`\`
+
+---
+
+### Configuration Reference
+
+#### Server Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`rundeck_grails_url\` | \`http://localhost:4440\` | URL users access Rundeck (used for links/redirects) |
+| \`rundeck_port\` | \`4440\` | HTTP port |
+| \`rundeck_address\` | \`127.0.0.1\` | Bind address (\`0.0.0.0\` for external) |
+| \`rundeck_context_path\` | \`/\` | URL context path |
+| \`rundeck_server_name\` | \`{{ ansible_hostname }}\` | Server identification |
+
+#### Database Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`rundeck_database_backend\` | \`postgresql\` | Database type: \`h2\` or \`postgresql\` |
+| \`rundeck_db_host\` | \`localhost\` | PostgreSQL host |
+| \`rundeck_db_port\` | \`5432\` | PostgreSQL port |
+| \`rundeck_db_name\` | \`rundeck\` | Database name |
+| \`rundeck_db_user\` | \`rundeckuser\` | Database user |
+| \`rundeck_db_password\` | (vault) | Database password |
+| \`rundeck_db_pool_max_active\` | \`50\` | Max active connections |
+
+#### Execution Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`rundeck_execution_mode\` | \`active\` | \`active\` (run jobs) or \`passive\` (read-only) |
+| \`rundeck_loglevel\` | \`INFO\` | Log level: TRACE, DEBUG, INFO, WARN, ERROR |
+| \`rundeck_audit_logging\` | \`true\` | Enable audit logging |
+
+#### SSH Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`rundeck_ssh_key_generate\` | \`false\` | Generate SSH key for remote execution |
+| \`rundeck_ssh_key_type\` | \`rsa\` | Key type: rsa, ed25519 |
+| \`rundeck_ssh_key_bits\` | \`4096\` | Key size |
+| \`rundeck_ssh_key_path\` | \`/var/lib/rundeck/.ssh/id_rsa\` | Private key location |
+| \`rundeck_ssh_timeout\` | \`0\` | SSH timeout (0 = no timeout) |
+| \`rundeck_ssh_authentication\` | \`privateKey\` | Auth type: \`privateKey\` or \`password\` |
+
+#### User Authentication
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`rundeck_auth_file_enabled\` | \`true\` | Use realm.properties for auth |
+| \`rundeck_users\` | \`[]\` | List of users to create |
+
+**User format:**
+\`\`\`yaml
+rundeck_users:
+  - username: admin
+    password: "{{ vault_password }}"
+    roles: "admin,user"      # Available: admin, user, architect, deploy, build
+\`\`\`
+
+#### GUI Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`rundeck_gui_title\` | \`Rundeck\` | Browser title |
+| \`rundeck_gui_brand_html\` | \`""\` | Custom HTML in header |
+| \`rundeck_gui_execution_tail_lines\` | \`20\` | Default log lines shown |
+
+#### JVM Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`rundeck_jvm_max_heap\` | \`2048m\` | Maximum heap size |
+| \`rundeck_jvm_min_heap\` | \`256m\` | Initial heap size |
+| \`rundeck_jvm_options\` | \`""\` | Additional JVM options |
+
+#### Email Notifications
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`rundeck_mail_enabled\` | \`false\` | Enable email notifications |
+| \`rundeck_mail_host\` | \`localhost\` | SMTP server |
+| \`rundeck_mail_port\` | \`25\` | SMTP port |
+| \`rundeck_mail_from\` | \`rundeck@localhost\` | From address |
+
+#### Metrics Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`rundeck_metrics_enabled\` | \`true\` | Enable metrics collection |
+| \`rundeck_metrics_jmx_enabled\` | \`false\` | Enable JMX metrics |
+
+#### Storage Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`rundeck_storage_provider\` | \`file\` | Key storage: \`file\`, \`db\`, \`vault\` |
+| \`rundeck_storage_path\` | \`/var/lib/rundeck/var/storage\` | Storage directory |
+
+#### PostgreSQL Configuration (rundeck_postgres role)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`rundeck_postgres_version\` | \`16\` | PostgreSQL version |
+| \`rundeck_postgres_max_connections\` | \`100\` | Max database connections |
+| \`rundeck_postgres_shared_buffers\` | \`256MB\` | Shared memory buffers |
+| \`rundeck_postgres_work_mem\` | \`4MB\` | Per-operation memory |
+| \`rundeck_postgres_backup_enabled\` | \`true\` | Enable daily backups |
+| \`rundeck_postgres_backup_retention_days\` | \`7\` | Backup retention |
+
+---
+
+### Deployment Examples
+
+#### Minimal Production Setup
+
+\`\`\`yaml
+rundeck_hosts:
+  hosts:
+    rundeck-01:
+      ansible_host: 192.168.1.100
+  vars:
+    rundeck_grails_url: "http://192.168.1.100:4440"
+    rundeck_address: "0.0.0.0"
+    rundeck_db_password: "{{ vault_rundeck_db_password }}"
+    rundeck_users:
+      - username: admin
+        password: "{{ vault_rundeck_admin_password }}"
+        roles: "admin,user"
+\`\`\`
+
+#### High-Memory Server (8GB+ RAM)
+
+\`\`\`yaml
+rundeck_hosts:
+  vars:
+    rundeck_jvm_max_heap: "4096m"
+    rundeck_jvm_min_heap: "1024m"
+    rundeck_db_pool_max_active: 100
+    rundeck_postgres_shared_buffers: "2GB"
+    rundeck_postgres_effective_cache_size: "6GB"
+\`\`\`
+
+#### External PostgreSQL Database
+
+\`\`\`yaml
+rundeck_hosts:
+  vars:
+    rundeck_database_backend: postgresql
+    rundeck_db_host: "db.example.com"
+    rundeck_db_port: 5432
+    rundeck_db_name: "rundeck_prod"
+    rundeck_db_user: "rundeck_app"
+    rundeck_db_password: "{{ vault_external_db_password }}"
+    
+    # Skip PostgreSQL role (using external DB)
+    # Add to playbook: when: rundeck_db_host == 'localhost'
+\`\`\`
+
+#### With Email Notifications
+
+\`\`\`yaml
+rundeck_hosts:
+  vars:
+    rundeck_mail_enabled: true
+    rundeck_mail_host: "smtp.example.com"
+    rundeck_mail_port: 587
+    rundeck_mail_from: "rundeck@example.com"
+\`\`\`
+
+#### Multiple Users with Roles
+
+\`\`\`yaml
+rundeck_hosts:
+  vars:
+    rundeck_users:
+      - username: admin
+        password: "{{ vault_admin_pass }}"
+        roles: "admin,user"
+      - username: deployer
+        password: "{{ vault_deployer_pass }}"
+        roles: "deploy,user"
+      - username: viewer
+        password: "{{ vault_viewer_pass }}"
+        roles: "user"
+\`\`\`
+
+---
+
+### Operations
+
+#### Deploy Rundeck
+
+\`\`\`bash
+# Full deployment
+ansible-playbook playbooks/rundeck-hosts.yml --ask-vault-pass
+
+# Just Rundeck (skip other roles)
+ansible-playbook playbooks/rundeck-hosts.yml --tags=rundeck,rundeck-postgres
+
+# Dry run
+ansible-playbook playbooks/rundeck-hosts.yml --check --diff
+\`\`\`
+
+#### Verify Installation
+
+\`\`\`bash
+# Check service status
+systemctl status rundeckd
+systemctl status postgresql
+
+# Check logs
+tail -f /var/log/rundeck/service.log
+
+# Test API
+curl http://localhost:4440/api/1/system/info
+\`\`\`
+
+#### Database Operations
+
+\`\`\`bash
+# Connect to database
+sudo -u postgres psql -d rundeck
+
+# Manual backup
+sudo -u postgres pg_dump rundeck > rundeck_backup.sql
+
+# Check backup schedule
+cat /usr/local/bin/backup_rundeck_db.sh
+\`\`\`
+
+#### Get SSH Public Key (for remote nodes)
+
+\`\`\`bash
+# On Rundeck server
+cat /var/lib/rundeck/.ssh/id_rsa.pub
+
+# Add this key to remote nodes' authorized_keys
+\`\`\`
+
+---
+
+### Troubleshooting
+
+#### Service Won't Start
+
+\`\`\`bash
+# Check logs
+journalctl -u rundeckd -f
+tail -100 /var/log/rundeck/service.log
+
+# Common issues:
+# - Database not running: systemctl start postgresql
+# - Wrong DB password: check rundeck-config.properties
+# - Port in use: netstat -tlnp | grep 4440
+\`\`\`
+
+#### Database Connection Issues
+
+\`\`\`bash
+# Test PostgreSQL connection
+psql -h localhost -U rundeckuser -d rundeck
+
+# Check pg_hba.conf allows connections
+cat /etc/postgresql/16/main/pg_hba.conf | grep rundeck
+
+# Restart PostgreSQL
+systemctl restart postgresql
+\`\`\`
+
+#### Cannot Login
+
+\`\`\`bash
+# Check realm.properties
+cat /etc/rundeck/realm.properties
+
+# Format should be: username: password,role1,role2
+# Restart after changes
+systemctl restart rundeckd
+\`\`\`
+
+#### Slow Performance
+
+\`\`\`yaml
+# Increase JVM memory
+rundeck_jvm_max_heap: "4096m"
+
+# Optimize PostgreSQL
+rundeck_postgres_shared_buffers: "1GB"
+rundeck_postgres_effective_cache_size: "3GB"
+\`\`\`
+
+---
+
+## 🔐 Security Stack
+
+### Overview
+
+| Role | Purpose | Schedule |
+|------|---------|----------|
+| **AppArmor** | Mandatory Access Control | On-boot |
+| **OSSEC** | File integrity monitoring | Hourly + Real-time |
+| **Maldet** | Malware scanning | Daily at 2 AM |
+| **Lynis** | Security audits | Daily at 5 AM |
+
+### AppArmor
+
+**Purpose**: Process confinement via kernel MAC
+
+\`\`\`yaml
+# Variables
+apparmor_enforce_profiles: []
+apparmor_complain_profiles: []
+apparmor_custom_profiles: []
+\`\`\`
+
+\`\`\`bash
+# Deploy
+ansible-playbook playbooks/site.yml --tags=apparmor
+
+# Verify
+sudo aa-status
+\`\`\`
+
+### Integrity Monitoring (OSSEC)
+
+**Purpose**: File integrity monitoring with real-time alerts
+
+\`\`\`yaml
+# Variables
+ossec_version: 3.7.0
+ossec_email_notifications: false
+ossec_admin_email: "root"
+ossec_monitored_paths:
+  - /etc
+  - /bin
+  - /usr/bin
+  - /root
+ossec_syscheck_interval: 3600
+ossec_syscheck_realtime: "yes"
+\`\`\`
+
+\`\`\`bash
+# Deploy with email alerts
+ansible-playbook playbooks/security-full.yml --tags=integrity-monitoring \\
+  -e ossec_email_notifications=true \\
+  -e ossec_admin_email="admin@example.com"
+
+# Verify
+sudo /var/ossec/bin/agent_control -i
+tail -f /var/ossec/logs/alerts/alerts.log
+\`\`\`
+
+### Malware Scanning (Maldet)
+
+**Purpose**: Daily malware detection and quarantine
+
+\`\`\`yaml
+# Variables
+maldet_email_notifications: false
+maldet_admin_email: "root"
+maldet_scan_hour: 2
+maldet_scan_paths:
+  - /home
+  - /var/www
+  - /root
+maldet_quarantine_suspicious: true
+\`\`\`
+
+\`\`\`bash
+# Deploy
+ansible-playbook playbooks/security-full.yml --tags=malware-scanning
+
+# Manual scan
+sudo /usr/local/sbin/maldet -a /home /var/www
+
+# View reports
+ls -l /var/log/maldet-reports/
+\`\`\`
+
+### Security Audits (Lynis)
+
+**Purpose**: Daily security compliance audits
+
+\`\`\`yaml
+# Variables
+lynis_audit_hour: 5
+lynis_email_notifications: false
+lynis_admin_email: "root"
+\`\`\`
+
+\`\`\`bash
+# Deploy
+ansible-playbook playbooks/security-full.yml --tags=security-audits
+
+# Manual audit
+sudo lynis audit system
+
+# View report
+cat /var/log/lynis-report.dat
+\`\`\`
+
+### Deploy All Security
+
+\`\`\`bash
+ansible-playbook playbooks/security-full.yml
+\`\`\`
 
 ---
 
 ## 📊 Monitoring Stack
 
-### Log Aggregation
-- **Loki** (port 3100)
-- 30-day retention
-- Full-text search
-- Label-based filtering
+### Architecture
 
-### Metrics Collection
-- **Prometheus** (port 9090)
-- 30-day retention
-- Scrape interval: 15 seconds
-- Alert rule evaluation
+\`\`\`
+System Logs → Grafana Agent → Loki (3100)
+System Metrics → Grafana Agent → Prometheus (9090)
+Alert Rules → Alertmanager (9093) → Notifications
+Services → Monit (2812) → Auto-restart
+\`\`\`
 
-### Data Shipping
-- **Grafana Agent**
-- Ships logs to Loki
-- Ships metrics to Prometheus
-- Configurable intervals
+### Log Rotation
 
-### Alert Management
-- **Alertmanager** (port 9093)
-- Multi-channel notifications
-- Email and Slack support
-- Custom routing rules
+**Purpose**: Prevent log files from consuming disk space
 
-### Service Monitoring
-- **Monit** (port 2812)
-- Process monitoring
-- Resource thresholds
-- Auto-restart on failure
+\`\`\`yaml
+# Variables
+log_rotation_retention_days: 30
+log_rotation_max_age_days: 60
+log_rotation_max_size: 100M
+log_rotation_cron_hour: 3
+log_rotation_compress: true
+\`\`\`
 
----
+\`\`\`bash
+# Deploy
+ansible-playbook playbooks/site.yml --tags=log-rotation
 
-## 🛠️ Configuration & Variables
+# Verify
+ls -lah /var/log/*.gz
+logrotate -d /etc/logrotate.conf
+\`\`\`
 
-### Global Variables (group_vars/all.yml)
-- System packages
-- User definitions
-- SSH configuration
-- Firewall rules
-- NTP servers
-- All role defaults
+### Loki
 
-### SSH Keys (group_vars/users.yml)
-- Operational user definitions
-- SSH public keys
-- Group memberships
-- Sudo configuration
+**Purpose**: Centralized log aggregation
 
-### Secrets (group_vars/vault.yml)
-- Encrypted sensitive data
-- Database passwords
-- API keys
-- Mail credentials
-- Webhook URLs
+\`\`\`yaml
+# Variables
+loki_version: 2.9.0
+loki_retention_days: 30
+loki_http_port: 3100
+\`\`\`
 
----
+\`\`\`bash
+# Deploy
+ansible-playbook playbooks/site.yml --tags=loki
 
-## 📚 Documentation Structure
+# Verify
+curl http://localhost:3100/loki/api/v1/status/buildinfo
+curl http://localhost:3100/api/prom/ready
+\`\`\`
 
-| Document | Purpose |
-|----------|---------|
-| **README.md** | This comprehensive guide |
-| **START_HERE.md** | Quick 4-step getting started |
-| **SETUP_GUIDE.md** | Detailed VM initialization |
-| **ARCHITECTURE.md** | System design and structure |
-| **DOCKER_RUNDECK_GUIDE.md** | Applications setup guide |
-| **SECURITY_GUIDE.md** | Security layer details |
-| **MONITORING_GUIDE.md** | Monitoring stack details |
-| **inventory/README.md** | Inventory configuration |
-| **docs/QUICK_REFERENCE_CARD.md** | Command quick reference |
-| **docs/WORKFLOW.md** | Workflow diagrams |
-| **docs/PRE_FLIGHT_CHECKLIST.md** | Pre-deployment checks |
+### Prometheus
 
----
+**Purpose**: Metrics storage and querying
 
-## 🚀 Deployment Timeline
+\`\`\`yaml
+# Variables
+prometheus_version: 2.48.0
+prometheus_port: 9090
+prometheus_scrape_interval: 15s
+prometheus_retention_time: 30d
+\`\`\`
 
-### Fresh VM Setup
-```
-Install OS (manual)                     ~10-15 minutes
-Edit configuration files                ~5 minutes
-Run setup.yml                           ~2-3 minutes
-Run site.yml                            ~5-10 minutes
-─────────────────────────────────────────────────────
-Total                                   ~25-30 minutes
-```
+\`\`\`bash
+# Deploy
+ansible-playbook playbooks/site.yml --tags=prometheus
 
-### Multi-Host Deployment
-```
-Setup Phase (parallel)                  ~2-3 minutes
-Deployment Phase (parallel)             ~5-10 minutes
-─────────────────────────────────────────────────────
-All VMs ready                           ~15-20 minutes
-```
+# Verify
+curl http://localhost:9090/-/healthy
+curl http://localhost:9090/api/v1/status/config
+\`\`\`
 
----
+**Web UI**: \`http://localhost:9090\`
 
-## 💡 Usage Examples
+### Grafana Agent
 
-### Deploy to Single Server
-```bash
-ansible-playbook playbooks/setup.yml -u initial_os_user -k --ask-become-pass
-ansible-playbook playbooks/site.yml
-```
+**Purpose**: Collect and ship logs/metrics
 
-### Deploy Docker Infrastructure
-```bash
-ansible-playbook playbooks/docker-hosts.yml -i inventory/sample_inventory.yml
-```
+\`\`\`yaml
+# Variables
+loki_push_url: "http://localhost:3100/loki/api/v1/push"
+prometheus_push_url: "http://localhost:9090/api/v1/write"
+grafana_agent_scrape_interval: 15s
+grafana_agent_collect_node_metrics: true
+\`\`\`
 
-### Deploy Rundeck Automation
-```bash
-ansible-playbook playbooks/rundeck-hosts.yml -i inventory/sample_inventory.yml
-```
+\`\`\`bash
+# Deploy
+ansible-playbook playbooks/site.yml --tags=grafana-agent
 
-### Deploy Monitoring Only
-```bash
-ansible-playbook playbooks/monitoring-full.yml -i inventory/sample_inventory.yml
-```
+# Verify
+systemctl status grafana-agent
+\`\`\`
 
-### Deploy Security Only
-```bash
-ansible-playbook playbooks/security-full.yml -i inventory/sample_inventory.yml
-```
+### Alertmanager
 
-### Selective Role Deployment
-```bash
-ansible-playbook playbooks/site.yml --tags=docker,loki,prometheus
-```
+**Purpose**: Alert routing and notifications
 
-### Testing with Check Mode
-```bash
-# Test without making changes
-ansible-playbook playbooks/site.yml --check
-```
+\`\`\`yaml
+# Variables
+alertmanager_port: 9093
+alertmanager_email_to: "admin@example.com"
+alertmanager_slack_webhook: "{{ vault_slack_webhook }}"
+\`\`\`
 
----
+\`\`\`bash
+# Deploy
+ansible-playbook playbooks/site.yml --tags=alertmanager
 
-## 📈 Implementation Details
+# Verify
+curl http://localhost:9093/-/healthy
+\`\`\`
 
-### Stage 1: Fresh VM Deployment
+**Web UI**: \`http://localhost:9093\`
 
-**Initial State**:
-- Fresh Ubuntu OS installation
-- Initial OS user with password
-- SSH not hardened
-- No automation configured
+### Monit
 
-**Execution**:
-```bash
-ansible-playbook playbooks/setup.yml \
-  -u initial_os_user \
-  -k \
-  --ask-become-pass
-```
+**Purpose**: Service monitoring and auto-restart
 
-**Results**:
-- Automation user created with passwordless sudo
-- SSH keys deployed and configured
-- SSH hardened (passwords disabled)
-- System ready for automated deployment
+\`\`\`yaml
+# Variables
+monit_port: 2812
+monit_check_interval: 60
+monit_alert_email: "admin@example.com"
+\`\`\`
 
-### Stage 2: Full Infrastructure Deployment
+\`\`\`bash
+# Deploy
+ansible-playbook playbooks/site.yml --tags=monit
 
-**Execution**:
-```bash
-ansible-playbook playbooks/site.yml
-```
+# Verify
+sudo monit status
+\`\`\`
 
-**Applies**:
-- All 22 roles
-- Conditional deployment based on inventory groups
-- Docker isolated to docker_hosts and ubuntu_desktop
-- Rundeck isolated to rundeck_hosts (never with Docker)
-- Complete security hardening
-- Full monitoring stack
+**Web UI**: \`http://localhost:2812\`
 
-### Stage 3: Multi-Host Management
+### Deploy All Monitoring
 
-**Host Groups**:
-- `common_ubuntu` - Basic infrastructure (essentials, security, monitoring)
-- `docker_hosts` - Docker platforms (+ docker role)
-- `rundeck_hosts` - Automation servers (+ rundeck role, no docker)
-- `ubuntu_desktop` - Workstations (+ docker)
-
-**Deployment Strategy**:
-```bash
-# Deploy base essentials to all
-ansible-playbook playbooks/essentials.yml
-
-# Deploy group-specific roles
-ansible-playbook playbooks/docker-hosts.yml
-ansible-playbook playbooks/rundeck-hosts.yml
-ansible-playbook playbooks/common-hosts.yml
-
-# Or deploy everything at once
-ansible-playbook playbooks/site.yml
-```
+\`\`\`bash
+ansible-playbook playbooks/monitoring-full.yml
+\`\`\`
 
 ---
 
-## 🔄 Docker and Rundeck Separation
+## 🔧 Troubleshooting
 
-**Critical Requirement**: Docker and Rundeck run on separate hosts
+### Connection Issues
 
-**Implementation**:
-- **docker_hosts** group: Runs Docker + essentials + security + monitoring
-- **rundeck_hosts** group: Runs Rundeck + essentials + security + monitoring (NO Docker)
-- **ubuntu_desktop** group: Optional Docker for workstations
+**Problem**: SSH connection refused
+\`\`\`bash
+# Verify VM is running
+ping 192.168.X.X
 
-**Configuration in site.yml**:
-```yaml
-- name: Install Docker
-  include_role:
-    name: docker
-  when: inventory_hostname in groups.get('docker_hosts', []) or 
-        inventory_hostname in groups.get('ubuntu_desktop', [])
+# Check SSH service on VM
+sudo systemctl status ssh
 
-- name: Install Rundeck
-  include_role:
-    name: rundeck
-  when: inventory_hostname in groups.get('rundeck_hosts', [])
-```
+# Check firewall
+sudo ufw allow 22/tcp
+\`\`\`
 
-**Host Inventory Example**:
-```yaml
-docker_hosts:
-  hosts:
-    docker-server-1:
-      ansible_host: 192.168.1.110
-    docker-server-2:
-      ansible_host: 192.168.1.111
+**Problem**: Permission denied (publickey)
+\`\`\`bash
+# Use password auth for initial setup
+ansible-playbook playbooks/setup.yml -u John -k --ask-become-pass
+\`\`\`
 
-rundeck_hosts:
-  hosts:
-    rundeck-server-1:
-      ansible_host: 192.168.1.120
-    rundeck-server-2:
-      ansible_host: 192.168.1.121
-```
+### Setup Playbook Failed
+
+**Problem**: Playbook stopped mid-execution
+
+**Solution**:
+1. Check which step failed in output
+2. Fix the issue (e.g., add SSH key to users.yml)
+3. Re-run - playbooks are idempotent (safe to re-run)
+
+### Can't Connect After Setup
+
+**Problem**: SSH fails after setup.yml completed
+
+**Cause**: SSH keys weren't properly configured
+
+**Solution**:
+1. Verify your public key is in \`group_vars/users.yml\`
+2. Verify it's the correct key
+3. Re-run setup.yml if needed
+
+### Service Issues
+
+**Problem**: Service not starting
+
+\`\`\`bash
+# Check service status
+systemctl status <service-name>
+
+# Check logs
+journalctl -u <service-name> -f
+
+# Check port
+ss -tlnp | grep <port>
+\`\`\`
 
 ---
 
-## 📋 Project Statistics
+## 📋 Command Reference
+
+### Syntax Check
+\`\`\`bash
+ansible-playbook playbooks/site.yml --syntax-check
+\`\`\`
+
+### Dry Run
+\`\`\`bash
+ansible-playbook playbooks/site.yml --check --diff
+\`\`\`
+
+### Run with Tags
+\`\`\`bash
+ansible-playbook playbooks/site.yml --tags "security,firewall"
+\`\`\`
+
+### Limit to Hosts
+\`\`\`bash
+ansible-playbook playbooks/site.yml --limit "webservers"
+\`\`\`
+
+### Encrypt Secrets
+\`\`\`bash
+ansible-vault encrypt group_vars/vault.yml
+ansible-vault edit group_vars/vault.yml
+\`\`\`
+
+### Lint Playbooks
+\`\`\`bash
+ansible-lint playbooks/ roles/
+\`\`\`
+
+### Test Connectivity
+\`\`\`bash
+ansible all -i inventory/sample_inventory.yml -m ping
+\`\`\`
+
+### Get Facts
+\`\`\`bash
+ansible all -m setup | head -100
+\`\`\`
+
+### Ad-hoc Commands
+\`\`\`bash
+# Run command on all hosts
+ansible all -m command -a "uptime"
+
+# Check disk space
+ansible all -m command -a "df -h"
+
+# Restart service
+ansible all -m service -a "name=nginx state=restarted"
+\`\`\`
+
+---
+
+## 📊 Project Statistics
 
 | Metric | Value |
 |--------|-------|
@@ -471,163 +1262,32 @@ rundeck_hosts:
 | Security Roles | 4 |
 | Monitoring Roles | 7 |
 | Apps & Services | 2 |
-| Playbooks | 12+ |
-| Configuration Files | 60+ |
-| Code Lines | 2000+ |
-| Documentation | 500+ pages |
+| Playbooks | 14 |
+| Host Groups | 4 |
 | Setup Time | 2-3 minutes |
 | Full Deploy Time | 5-10 minutes |
-| Host Groups | 4 |
 
 ---
 
-## ✨ Key Features
+## ✅ Getting Started Checklist
 
-- ✅ **Modular Design** - 22 independent roles
-- ✅ **Automated Setup** - Fresh VMs ready in 2-3 minutes
-- ✅ **SSH Hardening** - Key-only auth, no passwords
-- ✅ **Security Stack** - AppArmor, OSSEC, Maldet, Lynis
-- ✅ **Monitoring Stack** - Loki, Prometheus, Alertmanager, Monit
-- ✅ **User Management** - SSH keys, groups, sudo
-- ✅ **Docker Support** - Full containerization
-- ✅ **Rundeck Integration** - Automation platform
-- ✅ **Multi-Host** - Fleet management support
-- ✅ **Idempotent** - Safe to re-run
-- ✅ **Well Documented** - Comprehensive guides
-- ✅ **Production Ready** - Battle-tested
-
----
-
-## 🎯 Getting Started Checklist
-
-- [ ] Read [START_HERE.md](START_HERE.md)
-- [ ] Prepare SSH key pair
-- [ ] Update `group_vars/users.yml` with your SSH key
-- [ ] Edit `inventory/sample_inventory.yml` with VM IPs
-- [ ] Update `group_vars/all.yml` with your settings
-- [ ] Run `setup.yml` on fresh VM
-- [ ] Run `site.yml` for full deployment
-- [ ] Verify services (Prometheus, Loki, Alertmanager)
-- [ ] Configure monitoring dashboards
-- [ ] Set up alert notifications
+- [ ] Generate SSH key pair (\`ssh-keygen -t ed25519\`)
+- [ ] Update \`group_vars/users.yml\` with your SSH key
+- [ ] Edit \`inventory/sample_inventory.yml\` with VM IPs
+- [ ] Update \`group_vars/all.yml\` with your settings
+- [ ] Run \`setup.yml\` on fresh VM
+- [ ] Verify with \`ansible all -m ping\`
+- [ ] Run \`site.yml\` for full deployment
+- [ ] Verify services (Prometheus :9090, Loki :3100, Alertmanager :9093)
 
 ---
 
 ## 🔐 Security Best Practices
 
-1. **SSH Keys**
-   - Store private keys securely
-   - Use ed25519 keys (preferred)
-   - Restrict file permissions (600)
-
-2. **Vault Secrets**
-   - Encrypt `group_vars/vault.yml`
-   - Use strong vault password
-   - Never commit unencrypted secrets
-
-3. **Access Control**
-   - Use passwordless sudo sparingly
-   - Audit sudo logs regularly
-   - Restrict SSH to needed users
-
-4. **Monitoring**
-   - Review logs daily
-   - Set up alerting
-   - Monitor disk space
-   - Track security events
-
----
-
-## 📞 Getting Help
-
-1. **New users?** → [START_HERE.md](START_HERE.md)
-2. **Setup issues?** → [SETUP_GUIDE.md](SETUP_GUIDE.md)
-3. **Architecture questions?** → [ARCHITECTURE.md](ARCHITECTURE.md)
-4. **Docker/Rundeck setup?** → [DOCKER_RUNDECK_GUIDE.md](DOCKER_RUNDECK_GUIDE.md)
-5. **Security details?** → [SECURITY_GUIDE.md](SECURITY_GUIDE.md)
-6. **Monitoring setup?** → [MONITORING_GUIDE.md](MONITORING_GUIDE.md)
-7. **Quick reference?** → [docs/QUICK_REFERENCE_CARD.md](docs/QUICK_REFERENCE_CARD.md)
-
----
-
-## 📂 Project Structure
-
-```
-├── README.md                          # This file
-├── START_HERE.md                      # Quick start guide
-├── SETUP_GUIDE.md                     # VM initialization
-├── ARCHITECTURE.md                    # System design
-├── DOCKER_RUNDECK_GUIDE.md           # Apps setup
-├── SECURITY_GUIDE.md                  # Security details
-├── MONITORING_GUIDE.md                # Monitoring setup
-│
-├── inventory/
-│   ├── sample_inventory.yml           # Host definitions
-│   └── README.md                      # Inventory guide
-│
-├── group_vars/
-│   ├── all.yml                        # Global variables
-│   ├── users.yml                      # User definitions
-│   └── vault.yml                      # Encrypted secrets
-│
-├── playbooks/
-│   ├── site.yml                       # Full deployment
-│   ├── setup.yml                      # Fresh VM setup
-│   ├── docker-hosts.yml               # Docker servers
-│   ├── rundeck-hosts.yml              # Rundeck servers
-│   ├── common-hosts.yml               # Basic servers
-│   ├── desktop-hosts.yml              # Workstations
-│   ├── essentials.yml                 # Core roles
-│   ├── security-full.yml              # Security roles
-│   ├── monitoring-full.yml            # Monitoring roles
-│   ├── updates.yml                    # Updates only
-│   └── apps.yml                       # Apps only
-│
-├── roles/
-│   ├── apt/                           # Package management
-│   ├── packages/                      # System utilities
-│   ├── user_accounts/                 # User management
-│   ├── users_ops/                     # Operational users
-│   ├── ssh/                           # SSH hardening
-│   ├── timezone/                      # Time sync
-│   ├── hostname/                      # Host config
-│   ├── firewall/                      # UFW rules
-│   ├── mail/                          # Postfix
-│   ├── updates/                       # Auto-updates
-│   ├── docker/                        # Docker CE
-│   ├── rundeck/                       # Rundeck
-│   ├── apparmor/                      # MAC policies
-│   ├── integrity_monitoring/          # OSSEC
-│   ├── malware_scanning/              # Maldet
-│   ├── security_audits/               # Lynis
-│   ├── log_rotation/                  # Logrotate
-│   ├── loki/                          # Log aggregation
-│   ├── prometheus/                    # Metrics
-│   ├── grafana_agent/                 # Data shipping
-│   ├── alertmanager/                  # Alert routing
-│   └── monit/                         # Service monitoring
-│
-└── docs/
-    ├── QUICK_REFERENCE_CARD.md        # Command reference
-    ├── WORKFLOW.md                    # Workflow diagrams
-    ├── PRE_FLIGHT_CHECKLIST.md        # Verification items
-    └── README.md                      # Documentation index
-```
-
----
-
-## 🚀 Next Steps
-
-1. **Start Here**: Read [START_HERE.md](START_HERE.md) for quick overview
-2. **Prepare**: Get SSH key and update configuration
-3. **Setup**: Run setup.yml on first fresh VM
-4. **Deploy**: Run site.yml for full infrastructure
-5. **Monitor**: Check Prometheus and Loki dashboards
-6. **Manage**: Use playbooks for ongoing management
-
----
-
-**✨ Ready to deploy? Start with [START_HERE.md](START_HERE.md)! ✨**
+1. **SSH Keys**: Use ed25519, restrict permissions (600), store securely
+2. **Vault Secrets**: Encrypt \`group_vars/vault.yml\`, use strong password
+3. **Access Control**: Audit sudo logs, restrict SSH to needed users
+4. **Monitoring**: Review logs daily, set up alerting, track security events
 
 ---
 
@@ -635,4 +1295,4 @@ rundeck_hosts:
 
 **DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE** - Version 2, December 2004
 
-This project is released under the WTFPL. You are free to copy, modify, and distribute this project for any purpose. See [LICENSE](LICENSE) for details.
+This project is released under the WTFPL. See [LICENSE](LICENSE) for details.

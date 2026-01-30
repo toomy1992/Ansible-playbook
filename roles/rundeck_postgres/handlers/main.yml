@@ -1,0 +1,30 @@
+---
+# Handlers for PostgreSQL service management
+
+- name: Restart PostgreSQL
+  ansible.builtin.service:
+    name: postgresql
+    state: restarted
+  become: yes
+  listen: "restart postgresql"
+
+- name: Reload PostgreSQL
+  ansible.builtin.service:
+    name: postgresql
+    state: reloaded
+  become: yes
+  listen: "reload postgresql"
+
+- name: Start PostgreSQL
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+  become: yes
+  listen: "start postgresql"
+
+- name: Stop PostgreSQL
+  ansible.builtin.service:
+    name: postgresql
+    state: stopped
+  become: yes
+  listen: "stop postgresql"

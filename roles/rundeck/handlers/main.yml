@@ -6,3 +6,25 @@
     name: rundeckd
     state: restarted
   become: yes
+  listen: "restart rundeck"
+
+- name: Reload Rundeck
+  service:
+    name: rundeckd
+    state: reloaded
+  become: yes
+  listen: "reload rundeck"
+
+- name: Stop Rundeck
+  service:
+    name: rundeckd
+    state: stopped
+  become: yes
+  listen: "stop rundeck"
+
+- name: Start Rundeck
+  service:
+    name: rundeckd
+    state: started
+  become: yes
+  listen: "start rundeck"
