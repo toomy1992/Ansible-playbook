@@ -80,17 +80,17 @@
               expr: node_cpu_seconds_total > 0.8
               for: 5m
               annotations:
-                summary: "High CPU usage on {{ instance }}"
+                summary: "High CPU usage on {{ ansible_hostname }}"
             - alert: HighMemoryUsage
               expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.2
               for: 5m
               annotations:
-                summary: "High memory usage on {{ instance }}"
+                summary: "High memory usage on {{ ansible_hostname }}"
             - alert: DiskSpaceLow
               expr: node_filesystem_avail_bytes / node_filesystem_size_bytes < 0.1
               for: 5m
               annotations:
-                summary: "Low disk space on {{ instance }}"
+                summary: "Low disk space on {{ ansible_hostname }}"
     dest: /etc/prometheus/alert.rules.yml
     owner: prometheus
     group: prometheus

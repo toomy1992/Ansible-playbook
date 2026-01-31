@@ -1,24 +1,7 @@
 ---
 # Security Audits role - Lynis installation and daily audits
 
-- name: Add Lynis GPG key
-  apt_key:
-    url: "https://packages.cisofy.com/keys/lynis-repo-key.asc"
-    state: present
-  become: yes
-  tags:
-    - security-audits
-
-- name: Add Lynis repository
-  apt_repository:
-    repo: "deb https://packages.cisofy.com/community lynis main"
-    state: present
-    filename: lynis
-  become: yes
-  tags:
-    - security-audits
-
-- name: Install Lynis
+- name: Install Lynis from Ubuntu repository
   apt:
     name: lynis
     state: present

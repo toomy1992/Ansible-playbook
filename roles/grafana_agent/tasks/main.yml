@@ -22,21 +22,9 @@
 
 - name: Install Grafana Agent
   apt:
-    name: agent
+    name: grafana-agent
     state: present
     update_cache: yes
-  become: yes
-  tags:
-    - grafana-agent
-    - monitoring
-
-- name: Create agent configuration directory
-  file:
-    path: /etc/agent
-    state: directory
-    owner: root
-    group: root
-    mode: '0755'
   become: yes
   tags:
     - grafana-agent
@@ -45,7 +33,7 @@
 - name: Configure Grafana Agent
   template:
     src: grafana-agent-config.yml.j2
-    dest: /etc/agent/agent.yml
+    dest: /etc/grafana-agent.yaml
     owner: root
     group: root
     mode: '0644'

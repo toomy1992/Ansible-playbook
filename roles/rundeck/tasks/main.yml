@@ -293,6 +293,18 @@
 - name: Configure logging level
   lineinfile:
     path: /etc/rundeck/log4j2.properties
+    regexp: "^logger.rundeck.name\\s*="
+    line: "logger.rundeck.name = rundeck"
+    state: present
+  become: yes
+  notify: Restart Rundeck
+  tags:
+    - rundeck
+    - rundeck-logging
+
+- name: Configure logging level
+  lineinfile:
+    path: /etc/rundeck/log4j2.properties
     regexp: "^logger.rundeck.level\\s*="
     line: "logger.rundeck.level = {{ rundeck_loglevel }}"
     state: present
@@ -481,7 +493,7 @@
 
 - name: Verify Rundeck installation
   uri:
-    url: "http://{{ rundeck_address }}:{{ rundeck_port }}/api/1/system/info"
+    url: "http://127.0.0.1:{{ rundeck_port }}/api/56/system/info"
     method: GET
     status_code: [200, 403]
     timeout: 30
