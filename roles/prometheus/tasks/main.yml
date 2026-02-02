@@ -12,6 +12,16 @@
     - prometheus
     - monitoring
 
+- name: Install Node Exporter
+  apt:
+    name: prometheus-node-exporter
+    state: present
+  when: prometheus_enable_local_node_exporter | bool
+  become: yes
+  tags:
+    - prometheus
+    - monitoring
+
 - name: Create prometheus system user
   user:
     name: prometheus
@@ -144,10 +154,31 @@
     - prometheus
     - monitoring
 
+- name: Enable and start Node Exporter service
+  systemd:
+    name: prometheus-node-exporter
+    enabled: yes
+    state: started
+  when: prometheus_enable_local_node_exporter | bool
+  become: yes
+  tags:
+    - prometheus
+    - monitoring
+
 - name: Verify Prometheus service
   shell: curl -s http://localhost:{{ prometheus_port }}/-/healthy
   register: prometheus_status
   changed_when: false
+  become: yes
+  tags:
+    - prometheus
+    - monitoring
+
+- name: Verify Node Exporter service
+  shell: curl -s http://localhost:9100/metrics | head -1
+  register: node_exporter_status
+  changed_when: false
+  when: prometheus_enable_local_node_exporter | bool
   become: yes
   tags:
     - prometheus

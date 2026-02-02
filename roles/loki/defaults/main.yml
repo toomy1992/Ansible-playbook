@@ -4,6 +4,7 @@
 loki_version: 2.9.0
 loki_retention_days: 30
 loki_storage_path: /var/lib/loki
+loki_wal_dir: /var/lib/loki/wal
 loki_http_port: 3100
 
 loki_auth_enabled: false

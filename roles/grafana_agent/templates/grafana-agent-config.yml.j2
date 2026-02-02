@@ -19,8 +19,10 @@ metrics:
       remote_write:
         - url: {{ prometheus_push_url }}
 
+positions:
+  filename: /tmp/agent_positions
+
 logs:
-  position_directory: /tmp/agent_positions
   configs:
     - name: default
       clients:
@@ -32,7 +34,9 @@ logs:
               labels:
                 job: syslog
                 host: '{{ ansible_hostname }}'
-          file_sd_configs:
-            - files:
-                - /var/log/*.log
-                - /var/log/**/*.log
+                __path__: /var/log/syslog
+            - targets: [localhost]
+              labels:
+                job: syslog
+                host: '{{ ansible_hostname }}'
+                __path__: /var/log/auth.log

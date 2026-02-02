@@ -1,6 +1,8 @@
 auth_enabled: {{ loki_auth_enabled | lower }}
 
 ingester:
+  wal:
+    dir: {{ loki_wal_dir }}
   chunk_idle_period: {{ loki_chunk_idle_period }}
   chunk_retain_period: {{ loki_chunk_retain_period }}
   max_chunk_age: {{ loki_max_chunk_age }}
@@ -36,3 +38,8 @@ storage_config:
     shared_store: filesystem
   filesystem:
     directory: {{ loki_storage_path }}/chunks
+
+compactor:
+  working_directory: {{ loki_storage_path }}/compactor
+  shared_store: filesystem
+  compaction_interval: 10m

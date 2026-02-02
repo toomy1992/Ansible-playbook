@@ -1,0 +1,7 @@
+---
+# MKTXP (Mikrotik Prometheus Exporter) defaults
+mktxp_image: ghcr.io/akpw/mktxp:latest
+mktxp_port: 8728
+mktxp_config_dir: /opt/mktxp
+mktxp_network: mktxp
+mktxp_devices: []

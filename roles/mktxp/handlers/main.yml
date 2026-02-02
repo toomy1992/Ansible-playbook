@@ -1,0 +1,6 @@
+---
+- name: Restart MKTXP container
+  community.docker.docker_container:
+    name: mktxp
+    state: started
+    restart: yes

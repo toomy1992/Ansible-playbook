@@ -1,0 +1,6 @@
+---
+- name: Restart syslog-ng container
+  community.docker.docker_container:
+    name: syslog-ng
+    state: started
+    restart: yes

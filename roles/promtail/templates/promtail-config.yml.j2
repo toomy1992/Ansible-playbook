@@ -1,0 +1,21 @@
+server:
+  http_listen_port: {{ promtail_metrics_port }}
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: {{ promtail_loki_url }}/loki/api/v1/push
+
+scrape_configs:
+  - job_name: syslog
+    syslog:
+      listen_address: 0.0.0.0:{{ promtail_syslog_port }}
+      idle_timeout: 60s
+      label_structured_data: yes
+      labels:
+        job: "syslog"
+    relabel_configs:
+      - source_labels: ['__syslog_message_hostname']
+        target_label: 'host'

@@ -1,0 +1,7 @@
+---
+# Promtail defaults
+promtail_image: grafana/promtail:latest
+promtail_syslog_port: 1514
+promtail_metrics_port: 9080
+promtail_config_dir: /opt/promtail
+promtail_loki_url: http://localhost:3100

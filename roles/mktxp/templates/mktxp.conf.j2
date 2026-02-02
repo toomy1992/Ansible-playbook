@@ -1,0 +1,67 @@
+{% if mikrotik_enabled | default(false) %}
+{% for device in mktxp_devices %}
+[{{ device.name }}]
+    hostname = {{ device.hostname }}
+
+[default]
+    hostname = {{ device.hostname }}
+    port = {{ mktxp_port }}
+    username = {{ device.username }}
+    password = {{ device.password }}
+    credentials_file = ""
+    ssl_ca_file = ""
+    enabled = True
+    ipv6_route = False
+    gre = True
+    ipv6_firewall = False
+    eoip = False
+    wireless_clients = True
+    pool = True
+    interface = True
+    kid_control_assigned = False
+    public_ip = True
+    dhcp_lease = True
+    ipv6_pool = False
+    ipsec = True
+    ipv6_neighbor = False
+    dns = True
+    ssl_certificate_verify = False
+    bfd = False
+    poe = True
+    capsman_clients = True
+    w60g = False
+    netwatch = True
+    connections = True
+    check_for_updates = True
+    wireless = True
+    bgp = False
+    use_ssl = False
+    certificate = False
+    ssl_check_hostname = True
+    user = True
+    monitor = True
+    dhcp = True
+    ipip = False
+    queue = True
+    container = False
+    switch_port = True
+    neighbor = True
+    firewall = True
+    route = True
+    capsman = True
+    no_ssl_certificate = False
+    plaintext_login = True
+    routing_stats = True
+    kid_control_dynamic = False
+    health = True
+    lte = False
+    installed_packages = True
+    connection_stats = True
+    remote_dhcp_entry = None
+    remote_capsman_entry = None
+    address_list = None
+    ipv6_address_list = None
+    custom_labels = None
+    interface_name_format = name
+{% endfor %}
+{% endif %}

@@ -1,0 +1,7 @@
+---
+# syslog-ng defaults
+syslog_ng_image: balabit/syslog-ng:latest
+syslog_ng_udp_port: 514
+syslog_ng_tcp_port: 601
+syslog_ng_config_dir: /opt/syslog-ng
+syslog_ng_network: mktxp

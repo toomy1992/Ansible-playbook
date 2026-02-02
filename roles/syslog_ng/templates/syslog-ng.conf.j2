@@ -1,0 +1,29 @@
+@version: 3.28
+@include "scl.conf"
+
+source s_network {
+    network(
+        ip("0.0.0.0")
+        port({{ syslog_ng_udp_port }})
+        transport("udp")
+    );
+    network(
+        ip("0.0.0.0")
+        port({{ syslog_ng_tcp_port }})
+        transport("tcp")
+    );
+};
+
+destination d_promtail {
+    network(
+        "promtail"
+        port(1514)
+        transport("tcp")
+        template("$(format-json --scope rfc5424 --key ISODATE @timestamp=${ISODATE} @source=${SOURCE} @level=${LEVEL} host=${HOST} program=${PROGRAM} pid=${PID} message=${MESSAGE})\n")
+    );
+};
+
+log {
+    source(s_network);
+    destination(d_promtail);
+};

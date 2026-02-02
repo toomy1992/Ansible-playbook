@@ -1,0 +1,6 @@
+---
+- name: Restart Promtail container
+  community.docker.docker_container:
+    name: promtail
+    state: started
+    restart: yes

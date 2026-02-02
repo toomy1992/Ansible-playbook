@@ -33,6 +33,8 @@
   loop:
     - /etc/loki
     - /var/lib/loki
+    - /var/lib/loki/compactor
+    - "{{ loki_wal_dir }}"
     - /var/log/loki
   become: yes
   tags:

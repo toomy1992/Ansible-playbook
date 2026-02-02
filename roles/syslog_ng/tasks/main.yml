@@ -1,0 +1,28 @@
+---
+- name: Create syslog-ng config directory
+  ansible.builtin.file:
+    path: "{{ syslog_ng_config_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Generate syslog-ng configuration
+  ansible.builtin.template:
+    src: syslog-ng.conf.j2
+    dest: "{{ syslog_ng_config_dir }}/syslog-ng.conf"
+    mode: '0644'
+  notify: Restart syslog-ng container
+
+- name: Deploy syslog-ng Docker container
+  community.docker.docker_container:
+    name: syslog-ng
+    image: "{{ syslog_ng_image }}"
+    state: started
+    restart_policy: unless-stopped
+    ports:
+      - "{{ syslog_ng_udp_port }}:{{ syslog_ng_udp_port }}/udp"
+      - "{{ syslog_ng_tcp_port }}:{{ syslog_ng_tcp_port }}"
+    volumes:
+      - "{{ syslog_ng_config_dir }}/syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf:ro"
+    networks:
+      - name: "{{ syslog_ng_network }}"
+    recreate: yes

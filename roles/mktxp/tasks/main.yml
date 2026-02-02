@@ -1,0 +1,45 @@
+---
+- name: Create MKTXP config directory
+  ansible.builtin.file:
+    path: "{{ mktxp_config_dir }}"
+    state: directory
+    mode: '0755'
+  when: mikrotik_enabled | default(false)
+
+- name: Generate MKTXP configuration
+  ansible.builtin.template:
+    src: mktxp.conf.j2
+    dest: "{{ mktxp_config_dir }}/mktxp.conf"
+    mode: '0666'
+  notify: Restart MKTXP container
+  when: mikrotik_enabled | default(false)
+
+- name: Generate MKTXP additional configuration
+  ansible.builtin.template:
+    src: _mktxp.conf.j2
+    dest: "{{ mktxp_config_dir }}/_mktxp.conf"
+    mode: '0666'
+  notify: Restart MKTXP container
+  when: mikrotik_enabled | default(false)
+
+- name: Create MKTXP Docker network
+  community.docker.docker_network:
+    name: "{{ mktxp_network }}"
+    state: present
+  when: mikrotik_enabled | default(false)
+
+- name: Deploy MKTXP Docker container
+  community.docker.docker_container:
+    name: mktxp
+    image: "{{ mktxp_image }}"
+    user: root
+    state: started
+    restart_policy: unless-stopped
+    ports:
+      - "{{ mktxp_port }}:8728"
+    volumes:
+      - "{{ mktxp_config_dir }}/:/root/mktxp/:rw"
+    networks:
+      - name: "{{ mktxp_network }}"
+    recreate: yes
+  when: mikrotik_enabled | default(false)

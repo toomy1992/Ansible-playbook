@@ -36,8 +36,6 @@
       tags: [docker]
     - role: apparmor
       tags: [apparmor, security]
-    - role: integrity_monitoring
-      tags: [integrity-monitoring, security]
     - role: malware_scanning
       tags: [malware-scanning, security]
     - role: security_audits
@@ -54,6 +52,9 @@
       tags: [alertmanager, monitoring]
     - role: monit
       tags: [monit, monitoring]
+    #TODO: ADD OSSEC SERVER Playbook + update integrity_monitoring to integrity_monitoring_agent
+    #- role: integrity_monitoring
+    #  tags: [integrity-monitoring, security]
 
   post_tasks:
     - name: Display desktop completion

@@ -31,20 +31,39 @@
         - monitoring
         - prometheus
 
-    - role: grafana_agent
-      tags:
-        - monitoring
-        - grafana-agent
+    # - role: grafana_agent
+    #   tags:
+    #     - monitoring
+    #     - grafana-agent
 
     - role: alertmanager
       tags:
         - monitoring
         - alertmanager
 
-    - role: monit
+    - role: docker
+      tags:
+        - docker
+
+    - role: mktxp
       tags:
         - monitoring
-        - monit
+        - mktxp
+
+    - role: syslog_ng
+      tags:
+        - monitoring
+        - syslog-ng
+
+    - role: promtail
+      tags:
+        - monitoring
+        - promtail
+
+#    - role: monit
+#      tags:
+#        - monitoring
+#        - monit
 
   post_tasks:
     - name: Log play completion
@@ -61,8 +80,11 @@
           Log Rotation: Active
           Loki (Logs): http://localhost:3100 (metrics endpoint: /loki/api/v1/status/buildinfo)
           Prometheus (Metrics): http://localhost:9090
-          Grafana Agent: Running (collects logs and metrics)
+          Promtail: Running (ships logs to Loki)
           Alertmanager: http://localhost:9093
+          MKTXP (Mikrotik Exporter): http://localhost:49090 (if enabled)
+          syslog-ng: Listening on UDP 514, TCP 601
+          Promtail: Running (ships logs to Loki)
           Monit (Service Monitor): http://localhost:2812
       tags:
         - always
