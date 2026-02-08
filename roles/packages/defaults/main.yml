@@ -15,6 +15,7 @@ packages_to_install:
   - software-properties-common
   - qemu-guest-agent
   - mc
+  - python3-psycopg2
 
 optional_packages: []
 apt_upgrade_all: false

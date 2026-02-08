@@ -1,0 +1,64 @@
+---
+# Semaphore UI Role Defaults
+# ==========================
+# Configuration for Semaphore UI installation and setup.
+
+# ==================== Installation ====================
+semaphore_version: "2.16.51"  # Latest stable version
+semaphore_install_method: deb  # Options: deb, binary
+semaphore_download_url: "https://github.com/semaphoreui/semaphore/releases/download/v{{ semaphore_version }}/semaphore_{{ semaphore_version }}_linux_amd64.deb"
+
+# ==================== Service Configuration ====================
+semaphore_port: 3000
+semaphore_bind_address: "0.0.0.0"
+semaphore_base_path: ""
+
+# ==================== Database Configuration ====================
+semaphore_db_dialect: postgres
+semaphore_db_host: localhost
+semaphore_db_port: 5432
+semaphore_db_name: semaphore
+semaphore_db_user: semaphoreuser
+# semaphore_db_password: Set in vault or host vars
+
+# ==================== Admin User ====================
+semaphore_admin: admin
+# semaphore_admin_password: Set in vault or host vars
+
+# ==================== Security ====================
+semaphore_access_key_encryption: ""  # Leave empty for auto-generation
+semaphore_cookie_hash: ""  # Leave empty for auto-generation
+semaphore_cookie_encryption: ""  # Leave empty for auto-generation
+
+# ==================== SSH Configuration ====================
+semaphore_ssh_config_path: "~/.ssh"
+semaphore_ssh_key_path: "{{ semaphore_ssh_config_path }}/id_rsa"
+
+# ==================== Email Configuration ====================
+semaphore_email_alert: false
+semaphore_email_sender: ""
+semaphore_email_host: ""
+semaphore_email_port: 587
+semaphore_email_username: ""
+# semaphore_email_password: Set in vault
+
+# ==================== Web Configuration ====================
+semaphore_web_root: "/usr/lib/semaphore"
+semaphore_config_path: "/etc/semaphore"
+semaphore_data_path: "/var/lib/semaphore"
+semaphore_tmp_path: "{{ semaphore_data_path }}/tmp"
+
+# ==================== Logging ====================
+semaphore_log_path: "/var/log/semaphore"
+semaphore_log_level: info
+
+# ==================== API ====================
+semaphore_max_api_calls: 0  # 0 = unlimited
+
+# ==================== Tasks ====================
+semaphore_max_parallel_tasks: 10
+semaphore_task_execution_timeout: 0  # 0 = no timeout
+
+# ==================== Monitoring ====================
+semaphore_telemetry_enabled: false
+semaphore_metrics_enabled: true

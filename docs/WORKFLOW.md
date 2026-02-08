@@ -83,7 +83,7 @@
 │  ✓ Essentials deployed (APT, Packages, Users, SSH, etc)        │
 │  ✓ Security hardened (AppArmor, OSSEC, Maldet, Lynis)          │
 │  ✓ Monitoring enabled (Loki, Prometheus, Alertmanager, Monit)  │
-│  ✓ Apps installed (Docker and/or Rundeck as needed)            │
+│  ✓ Apps installed (Docker as needed)                           │
 │  ✓ All SSH keys deployed                                       │
 │  ✓ Firewall rules configured                                   │
 │  ✓ Automatic updates enabled                                   │
@@ -148,7 +148,6 @@ site.yml
 │
 ├── Apps (conditional)
 │   ├── Docker (on docker_hosts, ubuntu_desktop)
-│   └── Rundeck (on rundeck_hosts only)
 │
 ├── Security
 │   ├── AppArmor
@@ -174,7 +173,6 @@ Ansible-playbook/
 │   ├── site.yml                 ← Main playbook (all hosts)
 │   ├── common-hosts.yml         ← Essentials only
 │   ├── docker-hosts.yml         ← Essentials + Docker
-│   ├── rundeck-hosts.yml        ← Essentials + Rundeck
 │   └── desktop-hosts.yml        ← Desktop + Docker
 │
 ├── inventory/
@@ -294,7 +292,6 @@ ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
 
 # Group-specific
 ansible-playbook playbooks/docker-hosts.yml -i inventory/sample_inventory.yml
-ansible-playbook playbooks/rundeck-hosts.yml -i inventory/sample_inventory.yml
 
 # Specific roles
 ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml --tags=docker

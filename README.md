@@ -17,7 +17,7 @@ A production-ready Ansible framework with **22 comprehensive roles** organized a
 - [Playbook Reference](#-playbook-reference)
 - [Configuration](#-configuration--variables)
 - [Docker Setup](#-docker-setup)
-- [Rundeck Setup](#-rundeck-setup)
+- [Semaphore Setup](#-semaphore-setup)
 - [Security Stack](#-security-stack)
 - [Monitoring Stack](#-monitoring-stack)
 - [Troubleshooting](#-troubleshooting)
@@ -100,7 +100,7 @@ ansible-playbook playbooks/site.yml
 
 # Deploy to specific group
 ansible-playbook playbooks/docker-hosts.yml
-ansible-playbook playbooks/rundeck-hosts.yml
+ansible-playbook playbooks/semaphore-hosts.yml
 ansible-playbook playbooks/common-hosts.yml
 
 # Deploy specific roles only
@@ -123,7 +123,7 @@ ansible-playbook playbooks/site.yml --check
 │  Firewall  Mail  Updates  User Ops                   │
 ├──────────────────────────────────────────────────────┤
 │  APPS & SERVICES (2 roles)                           │
-│  Docker    Rundeck                                   │
+│  Docker    Semaphore                                  │
 ├──────────────────────────────────────────────────────┤
 │  SECURITY (4 roles)                                  │
 │  AppArmor  OSSEC  Maldet  Lynis                      │
@@ -155,14 +155,14 @@ START
 
 ### Host Groups
 
-| Group | Purpose | Docker | Rundeck |
+| Group | Purpose | Docker | Semaphore |
 |-------|---------|--------|---------|
 | \`common_ubuntu\` | Basic infrastructure | ❌ | ❌ |
 | \`docker_hosts\` | Container platforms | ✅ | ❌ |
-| \`rundeck_hosts\` | Automation servers | ❌ | ✅ |
+| \`semaphore_hosts\` | Automation servers | ❌ | ✅ |
 | \`ubuntu_desktop\` | Workstations | ✅ | ❌ |
 
-**Critical**: Docker and Rundeck never run on the same host.
+**Critical**: Docker and Semaphore never run on the same host.
 
 ---
 
@@ -175,7 +175,7 @@ Ansible-playbook/
 │   ├── site.yml                 # Full deployment (all 22 roles)
 │   ├── setup.yml                # Fresh VM initialization
 │   ├── docker-hosts.yml         # Docker servers
-│   ├── rundeck-hosts.yml        # Rundeck servers
+│   ├── semaphore-hosts.yml      # Semaphore servers
 │   ├── common-hosts.yml         # Basic servers
 │   ├── desktop-hosts.yml        # Workstations
 │   ├── essentials.yml           # Core roles only
@@ -184,7 +184,7 @@ Ansible-playbook/
 │   ├── security.yml             # SSH + Firewall
 │   ├── updates.yml              # APT + Updates
 │   ├── system.yml               # Hostname + Timezone
-│   ├── apps.yml                 # Docker + Rundeck
+│   ├── apps.yml                 # Docker + Semaphore
 │   └── diagnostic.yml           # Validation
 │
 ├── 🎭 roles/
@@ -199,7 +199,7 @@ Ansible-playbook/
 │   ├── mail/                    # Postfix service
 │   ├── updates/                 # Auto updates
 │   ├── docker/                  # Container platform
-│   ├── rundeck/                 # Runbook automation
+│   ├── semaphore/               # Ansible UI automation
 │   ├── apparmor/                # MAC profiles
 │   ├── integrity_monitoring/    # OSSEC
 │   ├── malware_scanning/        # Maldet
@@ -253,7 +253,7 @@ Ansible-playbook/
 | Role | Tag | Purpose |
 |------|-----|---------|
 | **docker** | \`docker\` | Docker CE, CLI, Compose installation |
-| **rundeck** | \`rundeck\` | Runbook automation platform (port 4440) |
+| **semaphore** | \`semaphore\` | Ansible UI automation platform (port 3000) |
 
 ### Security (4 Roles)
 
@@ -295,8 +295,8 @@ ansible-playbook playbooks/setup.yml -u John -k --ask-become-pass
 # Docker servers
 ansible-playbook playbooks/docker-hosts.yml
 
-# Rundeck servers  
-ansible-playbook playbooks/rundeck-hosts.yml
+# Semaphore servers
+ansible-playbook playbooks/semaphore-hosts.yml
 
 # Basic servers
 ansible-playbook playbooks/common-hosts.yml
@@ -323,7 +323,7 @@ ansible-playbook playbooks/security.yml
 # System updates
 ansible-playbook playbooks/updates.yml
 
-# Docker + Rundeck
+# Docker + Semaphore
 ansible-playbook playbooks/apps.yml
 \`\`\`
 
@@ -337,7 +337,7 @@ ansible-playbook playbooks/site.yml --tags=docker
 ansible-playbook playbooks/site.yml --tags=ssh,firewall,prometheus
 
 # Skip roles
-ansible-playbook playbooks/site.yml --skip-tags=mail,rundeck
+ansible-playbook playbooks/site.yml --skip-tags=mail,semaphore
 
 # All security
 ansible-playbook playbooks/site.yml --tags=security
@@ -383,9 +383,8 @@ firewall_rules: []
 docker_users: [ansible]
 docker_compose_install: true
 
-# Rundeck
-rundeck_grails_url: http://localhost:4440
-rundeck_port: 4440
+# Semaphore
+semaphore_port: 3000
 
 # Monitoring
 prometheus_retention_time: 30d
@@ -413,9 +412,9 @@ all:
       hosts:
         docker-01:
           ansible_host: 192.168.1.110
-    rundeck_hosts:
+    semaphore_hosts:
       hosts:
-        rundeck-01:
+        semaphore-01:
           ansible_host: 192.168.1.120
     ubuntu_desktop:
       hosts:
@@ -470,412 +469,7 @@ docker-compose --version
 docker run hello-world
 \`\`\`
 
----
 
-## 🔧 Rundeck Setup
-
-> **Documentation Reference**: [Rundeck Configuration](https://docs.rundeck.com/docs/administration/configuration/)
-
-### Overview
-
-This framework deploys **Rundeck Open Source** with:
-- OpenJDK 11 (required runtime)
-- PostgreSQL 16 database backend (production-ready)
-- Official Rundeck APT repository
-- Comprehensive configuration management
-- SSH key generation for remote node execution
-- Security hardening and monitoring integration
-
-### Architecture
-
-\`\`\`
-┌──────────────────────────────────────────────────────────┐
-│                    RUNDECK HOST                          │
-├──────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐    ┌─────────────────┐              │
-│  │   PostgreSQL    │◄───│    Rundeck      │              │
-│  │   (Port 5432)   │    │   (Port 4440)   │              │
-│  └─────────────────┘    └────────┬────────┘              │
-│                                  │                       │
-│  Configuration Files:            │  SSH Keys:            │
-│  /etc/rundeck/                   │  /var/lib/rundeck/    │
-│  ├── rundeck-config.properties   │  └── .ssh/id_rsa      │
-│  ├── framework.properties        │                       │
-│  └── realm.properties            │                       │
-└──────────────────────────────────┴───────────────────────┘
-                                   │
-                                   ▼
-                    ┌──────────────────────────┐
-                    │     Remote Nodes         │
-                    │  (SSH execution targets) │
-                    └──────────────────────────┘
-\`\`\`
-
-### Configuration Files (DEB/RPM Layout)
-
-| File | Purpose |
-|------|---------|
-| \`/etc/rundeck/rundeck-config.properties\` | Primary configuration (server, database, security) |
-| \`/etc/rundeck/framework.properties\` | Framework paths, SSH settings, global variables |
-| \`/etc/rundeck/realm.properties\` | File-based user authentication |
-| \`/etc/rundeck/jaas-loginmodule.conf\` | JAAS authentication configuration |
-| \`/etc/rundeck/log4j2.properties\` | Logging configuration |
-| \`/etc/rundeck/profile\` | JVM and environment settings |
-
-### Quick Start
-
-#### 1. Create Vault for Secrets
-
-\`\`\`bash
-# Create encrypted vault file
-ansible-vault create group_vars/vault.yml
-\`\`\`
-
-Add these variables:
-\`\`\`yaml
----
-vault_rundeck_db_password: "secure-database-password"
-vault_rundeck_admin_password: "secure-admin-password"
-vault_rundeck_operator_password: "secure-operator-password"
-\`\`\`
-
-#### 2. Configure Inventory
-
-Use the template at \`inventory/rundeck_inventory.yml\` or create your own:
-
-\`\`\`yaml
-# inventory/my_rundeck.yml
-all:
-  children:
-    rundeck_hosts:
-      hosts:
-        rundeck-01:
-          ansible_host: 192.168.1.100
-          ansible_user: ansible
-      vars:
-        # Required: Database password
-        rundeck_db_password: "{{ vault_rundeck_db_password }}"
-        
-        # Server URL (change for external access)
-        rundeck_grails_url: "http://192.168.1.100:4440"
-        rundeck_address: "0.0.0.0"  # Allow external connections
-        
-        # Users
-        rundeck_users:
-          - username: admin
-            password: "{{ vault_rundeck_admin_password }}"
-            roles: "admin,user"
-\`\`\`
-
-#### 3. Deploy Rundeck
-
-\`\`\`bash
-# Deploy with vault password
-ansible-playbook playbooks/rundeck-hosts.yml \\
-  -i inventory/my_rundeck.yml \\
-  --ask-vault-pass
-\`\`\`
-
-#### 4. Access Rundeck
-
-\`\`\`
-URL: http://your-server:4440
-Login: admin / (your vault password)
-\`\`\`
-
----
-
-### Configuration Reference
-
-#### Server Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| \`rundeck_grails_url\` | \`http://localhost:4440\` | URL users access Rundeck (used for links/redirects) |
-| \`rundeck_port\` | \`4440\` | HTTP port |
-| \`rundeck_address\` | \`127.0.0.1\` | Bind address (\`0.0.0.0\` for external) |
-| \`rundeck_context_path\` | \`/\` | URL context path |
-| \`rundeck_server_name\` | \`{{ ansible_hostname }}\` | Server identification |
-
-#### Database Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| \`rundeck_database_backend\` | \`postgresql\` | Database type: \`h2\` or \`postgresql\` |
-| \`rundeck_db_host\` | \`localhost\` | PostgreSQL host |
-| \`rundeck_db_port\` | \`5432\` | PostgreSQL port |
-| \`rundeck_db_name\` | \`rundeck\` | Database name |
-| \`rundeck_db_user\` | \`rundeckuser\` | Database user |
-| \`rundeck_db_password\` | (vault) | Database password |
-| \`rundeck_db_pool_max_active\` | \`50\` | Max active connections |
-
-#### Execution Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| \`rundeck_execution_mode\` | \`active\` | \`active\` (run jobs) or \`passive\` (read-only) |
-| \`rundeck_loglevel\` | \`INFO\` | Log level: TRACE, DEBUG, INFO, WARN, ERROR |
-| \`rundeck_audit_logging\` | \`true\` | Enable audit logging |
-
-#### SSH Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| \`rundeck_ssh_key_generate\` | \`false\` | Generate SSH key for remote execution |
-| \`rundeck_ssh_key_type\` | \`rsa\` | Key type: rsa, ed25519 |
-| \`rundeck_ssh_key_bits\` | \`4096\` | Key size |
-| \`rundeck_ssh_key_path\` | \`/var/lib/rundeck/.ssh/id_rsa\` | Private key location |
-| \`rundeck_ssh_timeout\` | \`0\` | SSH timeout (0 = no timeout) |
-| \`rundeck_ssh_authentication\` | \`privateKey\` | Auth type: \`privateKey\` or \`password\` |
-
-#### User Authentication
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| \`rundeck_auth_file_enabled\` | \`true\` | Use realm.properties for auth |
-| \`rundeck_users\` | \`[]\` | List of users to create |
-
-**User format:**
-\`\`\`yaml
-rundeck_users:
-  - username: admin
-    password: "{{ vault_password }}"
-    roles: "admin,user"      # Available: admin, user, architect, deploy, build
-\`\`\`
-
-#### GUI Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| \`rundeck_gui_title\` | \`Rundeck\` | Browser title |
-| \`rundeck_gui_brand_html\` | \`""\` | Custom HTML in header |
-| \`rundeck_gui_execution_tail_lines\` | \`20\` | Default log lines shown |
-
-#### JVM Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| \`rundeck_jvm_max_heap\` | \`2048m\` | Maximum heap size |
-| \`rundeck_jvm_min_heap\` | \`256m\` | Initial heap size |
-| \`rundeck_jvm_options\` | \`""\` | Additional JVM options |
-
-#### Email Notifications
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| \`rundeck_mail_enabled\` | \`false\` | Enable email notifications |
-| \`rundeck_mail_host\` | \`localhost\` | SMTP server |
-| \`rundeck_mail_port\` | \`25\` | SMTP port |
-| \`rundeck_mail_from\` | \`rundeck@localhost\` | From address |
-
-#### Metrics Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| \`rundeck_metrics_enabled\` | \`true\` | Enable metrics collection |
-| \`rundeck_metrics_jmx_enabled\` | \`false\` | Enable JMX metrics |
-
-#### Storage Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| \`rundeck_storage_provider\` | \`file\` | Key storage: \`file\`, \`db\`, \`vault\` |
-| \`rundeck_storage_path\` | \`/var/lib/rundeck/var/storage\` | Storage directory |
-
-#### PostgreSQL Configuration (rundeck_postgres role)
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| \`rundeck_postgres_version\` | \`16\` | PostgreSQL version |
-| \`rundeck_postgres_max_connections\` | \`100\` | Max database connections |
-| \`rundeck_postgres_shared_buffers\` | \`256MB\` | Shared memory buffers |
-| \`rundeck_postgres_work_mem\` | \`4MB\` | Per-operation memory |
-| \`rundeck_postgres_backup_enabled\` | \`true\` | Enable daily backups |
-| \`rundeck_postgres_backup_retention_days\` | \`7\` | Backup retention |
-
----
-
-### Deployment Examples
-
-#### Minimal Production Setup
-
-\`\`\`yaml
-rundeck_hosts:
-  hosts:
-    rundeck-01:
-      ansible_host: 192.168.1.100
-  vars:
-    rundeck_grails_url: "http://192.168.1.100:4440"
-    rundeck_address: "0.0.0.0"
-    rundeck_db_password: "{{ vault_rundeck_db_password }}"
-    rundeck_users:
-      - username: admin
-        password: "{{ vault_rundeck_admin_password }}"
-        roles: "admin,user"
-\`\`\`
-
-#### High-Memory Server (8GB+ RAM)
-
-\`\`\`yaml
-rundeck_hosts:
-  vars:
-    rundeck_jvm_max_heap: "4096m"
-    rundeck_jvm_min_heap: "1024m"
-    rundeck_db_pool_max_active: 100
-    rundeck_postgres_shared_buffers: "2GB"
-    rundeck_postgres_effective_cache_size: "6GB"
-\`\`\`
-
-#### External PostgreSQL Database
-
-\`\`\`yaml
-rundeck_hosts:
-  vars:
-    rundeck_database_backend: postgresql
-    rundeck_db_host: "db.example.com"
-    rundeck_db_port: 5432
-    rundeck_db_name: "rundeck_prod"
-    rundeck_db_user: "rundeck_app"
-    rundeck_db_password: "{{ vault_external_db_password }}"
-    
-    # Skip PostgreSQL role (using external DB)
-    # Add to playbook: when: rundeck_db_host == 'localhost'
-\`\`\`
-
-#### With Email Notifications
-
-\`\`\`yaml
-rundeck_hosts:
-  vars:
-    rundeck_mail_enabled: true
-    rundeck_mail_host: "smtp.example.com"
-    rundeck_mail_port: 587
-    rundeck_mail_from: "rundeck@example.com"
-\`\`\`
-
-#### Multiple Users with Roles
-
-\`\`\`yaml
-rundeck_hosts:
-  vars:
-    rundeck_users:
-      - username: admin
-        password: "{{ vault_admin_pass }}"
-        roles: "admin,user"
-      - username: deployer
-        password: "{{ vault_deployer_pass }}"
-        roles: "deploy,user"
-      - username: viewer
-        password: "{{ vault_viewer_pass }}"
-        roles: "user"
-\`\`\`
-
----
-
-### Operations
-
-#### Deploy Rundeck
-
-\`\`\`bash
-# Full deployment
-ansible-playbook playbooks/rundeck-hosts.yml --ask-vault-pass
-
-# Just Rundeck (skip other roles)
-ansible-playbook playbooks/rundeck-hosts.yml --tags=rundeck,rundeck-postgres
-
-# Dry run
-ansible-playbook playbooks/rundeck-hosts.yml --check --diff
-\`\`\`
-
-#### Verify Installation
-
-\`\`\`bash
-# Check service status
-systemctl status rundeckd
-systemctl status postgresql
-
-# Check logs
-tail -f /var/log/rundeck/service.log
-
-# Test API
-curl http://localhost:4440/api/1/system/info
-\`\`\`
-
-#### Database Operations
-
-\`\`\`bash
-# Connect to database
-sudo -u postgres psql -d rundeck
-
-# Manual backup
-sudo -u postgres pg_dump rundeck > rundeck_backup.sql
-
-# Check backup schedule
-cat /usr/local/bin/backup_rundeck_db.sh
-\`\`\`
-
-#### Get SSH Public Key (for remote nodes)
-
-\`\`\`bash
-# On Rundeck server
-cat /var/lib/rundeck/.ssh/id_rsa.pub
-
-# Add this key to remote nodes' authorized_keys
-\`\`\`
-
----
-
-### Troubleshooting
-
-#### Service Won't Start
-
-\`\`\`bash
-# Check logs
-journalctl -u rundeckd -f
-tail -100 /var/log/rundeck/service.log
-
-# Common issues:
-# - Database not running: systemctl start postgresql
-# - Wrong DB password: check rundeck-config.properties
-# - Port in use: netstat -tlnp | grep 4440
-\`\`\`
-
-#### Database Connection Issues
-
-\`\`\`bash
-# Test PostgreSQL connection
-psql -h localhost -U rundeckuser -d rundeck
-
-# Check pg_hba.conf allows connections
-cat /etc/postgresql/16/main/pg_hba.conf | grep rundeck
-
-# Restart PostgreSQL
-systemctl restart postgresql
-\`\`\`
-
-#### Cannot Login
-
-\`\`\`bash
-# Check realm.properties
-cat /etc/rundeck/realm.properties
-
-# Format should be: username: password,role1,role2
-# Restart after changes
-systemctl restart rundeckd
-\`\`\`
-
-#### Slow Performance
-
-\`\`\`yaml
-# Increase JVM memory
-rundeck_jvm_max_heap: "4096m"
-
-# Optimize PostgreSQL
-rundeck_postgres_shared_buffers: "1GB"
-rundeck_postgres_effective_cache_size: "3GB"
-\`\`\`
-
----
 
 ## 🔐 Security Stack
 

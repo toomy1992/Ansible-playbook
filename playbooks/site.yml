@@ -34,9 +34,6 @@
     - role: docker
       tags: [docker]
       when: inventory_hostname in groups.get('docker_hosts', []) or inventory_hostname in groups.get('ubuntu_desktop', [])
-    - role: rundeck
-      tags: [rundeck]
-      when: inventory_hostname in groups.get('rundeck_hosts', [])
     - role: apparmor
       tags: [apparmor, security]
     #TODO: ADD OSSEC SERVER Playbook + update integrity_monitoring to integrity_monitoring_agent

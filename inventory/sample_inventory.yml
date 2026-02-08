@@ -43,25 +43,6 @@ all:
             - ansible
 
     # ==============================
-    # RUNDECK HOSTS
-    # ==============================
-    rundeck_hosts:
-      description: "Ubuntu servers with Rundeck for job orchestration"
-      hosts:
-        rundeck-01:
-          ansible_host: 192.168.1.120
-          ansible_user: ansible
-          ansible_port: 22
-          rundeck_port: 4440
-          rundeck_grails_url: "http://rundeck-01.example.com:4440"
-        rundeck-02:
-          ansible_host: 192.168.1.121
-          ansible_user: ansible
-          ansible_port: 22
-          rundeck_port: 4440
-          rundeck_grails_url: "http://rundeck-02.example.com:4440"
-
-    # ==============================
     # UBUNTU DESKTOP WORKSTATIONS
     # ==============================
     ubuntu_desktop:

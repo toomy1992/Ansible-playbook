@@ -69,8 +69,6 @@
 │ $ ansible-playbook playbooks/docker-hosts.yml \         │
 │     -i inventory/sample_inventory.yml                   │
 │                                                         │
-│ $ ansible-playbook playbooks/rundeck-hosts.yml \        │
-│     -i inventory/sample_inventory.yml                   │
 │                                                         │
 │ Expected: All tasks complete with "ok" or "changed"    │
 │                                                         │

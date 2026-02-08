@@ -47,6 +47,7 @@ packages_to_install:
   - software-properties-common
   - mc
   - ncdu
+  - qemu-guest-agent
 
 optional_packages: []
 # Example:
@@ -229,34 +230,28 @@ docker_live_restore: true
 docker_userland_proxy: false
 docker_compose_install: true
 
-# ==================== Rundeck Runbook Automation ====================
-# Role: rundeck
-# Install and configure Rundeck for job orchestration
+# ==================== Semaphore Ansible UI ====================
+# Role: semaphore
+# Install and configure Semaphore UI for Ansible automation
 
-# Rundeck server configuration
-rundeck_grails_url: http://localhost:4440
-rundeck_port: 4440
-rundeck_address: 127.0.0.1
-rundeck_context_path: /
+# Semaphore server configuration
+semaphore_port: 3000
+semaphore_bind_address: "0.0.0.0"
 
-# Rundeck framework configuration
-rundeck_server_name: rundeck-server
+# Database configuration
+semaphore_db_dialect: postgresql
+semaphore_db_host: localhost
+semaphore_db_port: 5432
+semaphore_db_name: semaphore
+semaphore_db_user: semaphoreuser
+# semaphore_db_password: Set in vault
 
-# User authentication
-rundeck_users: []
-# Example:
-# rundeck_users:
-#   - username: admin
-#     password: "{{ vault_rundeck_admin_password }}"
-#   - username: operator
-#     password: "{{ vault_rundeck_operator_password }}"
+# Admin user
+semaphore_admin: admin
+# semaphore_admin_password: Set in vault
 
-# SSH key generation
-rundeck_ssh_key_generate: false
-
-# Additional configuration
-rundeck_execution_mode: active
-rundeck_loglevel: INFO
+# SSH configuration
+semaphore_ssh_config_path: "~/.ssh"
 
 ################################################################################
 # LAYER 3: SECURITY HARDENING (4 roles)

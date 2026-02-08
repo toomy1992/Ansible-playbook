@@ -1,0 +1,117 @@
+---
+# Semaphore UI Installation and Configuration Tasks
+
+- name: Create Semaphore system user
+  ansible.builtin.user:
+    name: semaphore
+    system: true
+    shell: /bin/bash
+    home: "{{ semaphore_data_path }}"
+    create_home: false
+
+- name: Create Semaphore directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: semaphore
+    group: semaphore
+    mode: '0750'
+  loop:
+    - "{{ semaphore_config_path }}"
+    - "{{ semaphore_data_path }}"
+    - "{{ semaphore_tmp_path }}"
+    - "{{ semaphore_log_path }}"
+
+- name: Download Semaphore DEB package
+  ansible.builtin.get_url:
+    url: "{{ semaphore_download_url }}"
+    dest: "/tmp/semaphore_{{ semaphore_version }}_linux_amd64.deb"
+    mode: '0644'
+  when: semaphore_install_method == 'deb'
+
+- name: Install Semaphore DEB package
+  ansible.builtin.apt:
+    deb: "/tmp/semaphore_{{ semaphore_version }}_linux_amd64.deb"
+    state: present
+  when: semaphore_install_method == 'deb'
+  notify: Restart Semaphore
+
+- name: Clean up downloaded DEB file
+  ansible.builtin.file:
+    path: "/tmp/semaphore_{{ semaphore_version }}_linux_amd64.deb"
+    state: absent
+  when: semaphore_install_method == 'deb'
+
+- name: Generate encryption keys if not provided
+  ansible.builtin.command: >
+    openssl rand -hex 16
+  register: access_key_result
+  when: semaphore_access_key_encryption == ""
+  changed_when: false
+
+- name: Set access key encryption
+  ansible.builtin.set_fact:
+    semaphore_access_key_encryption: "{{ access_key_result.stdout | default(semaphore_access_key_encryption) }}"
+
+- name: Generate cookie hash if not provided
+  ansible.builtin.command: >
+    openssl rand -hex 32
+  register: cookie_hash_result
+  when: semaphore_cookie_hash == ""
+  changed_when: false
+
+- name: Set cookie hash
+  ansible.builtin.set_fact:
+    semaphore_cookie_hash: "{{ cookie_hash_result.stdout | default(semaphore_cookie_hash) }}"
+
+- name: Generate cookie encryption if not provided
+  ansible.builtin.command: >
+    openssl rand -hex 16
+  register: cookie_encryption_result
+  when: semaphore_cookie_encryption == ""
+  changed_when: false
+
+- name: Set cookie encryption
+  ansible.builtin.set_fact:
+    semaphore_cookie_encryption: "{{ cookie_encryption_result.stdout | default(semaphore_cookie_encryption) }}"
+
+- name: Deploy Semaphore configuration
+  ansible.builtin.template:
+    src: config.json.j2
+    dest: "{{ semaphore_config_path }}/config.json"
+    owner: semaphore
+    group: semaphore
+    mode: '0600'
+  notify: Restart Semaphore
+
+- name: Deploy systemd service file
+  ansible.builtin.template:
+    src: semaphore.service.j2
+    dest: /etc/systemd/system/semaphore.service
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Enable and start Semaphore service
+  ansible.builtin.systemd:
+    name: semaphore
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Wait for Semaphore to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ semaphore_port }}/api/auth/login"
+    method: GET
+    status_code: 200
+  register: semaphore_check
+  until: semaphore_check.status == 200
+  retries: 30
+  delay: 2
+  ignore_errors: true
+
+- name: Create initial admin user
+  ansible.builtin.command: >
+    {{ semaphore_web_root }}/semaphore user add --admin --login "{{ semaphore_admin }}" --name "Administrator" --email "admin@localhost" --password "{{ semaphore_admin_password }}"
+  become_user: semaphore
+  when: semaphore_admin_password is defined
+  ignore_errors: true  # User might already exist

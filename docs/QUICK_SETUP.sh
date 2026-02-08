@@ -68,7 +68,6 @@ ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
 
 # Or deploy to specific group
 ansible-playbook playbooks/docker-hosts.yml -i inventory/sample_inventory.yml
-ansible-playbook playbooks/rundeck-hosts.yml -i inventory/sample_inventory.yml
 
 # Or deploy specific roles only
 ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml --tags=docker

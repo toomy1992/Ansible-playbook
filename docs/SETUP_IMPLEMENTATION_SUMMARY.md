@@ -37,7 +37,6 @@ Fully Configured Production Server
 ├─ Essentials: APT, Packages, Users, SSH, etc.
 ├─ Security: AppArmor, OSSEC, Maldet, Lynis
 ├─ Monitoring: Loki, Prometheus, Alertmanager, Monit
-├─ Apps: Docker and/or Rundeck (as configured)
 └─ Status: Production-ready
 ```
 
@@ -136,7 +135,6 @@ Final: SSH with key-only (ansible@VM, John@VM with keys)
 ### **playbooks/site.yml**
 - Added conditional role execution
 - Docker role: Runs on docker_hosts, ubuntu_desktop groups only
-- Rundeck role: Runs on rundeck_hosts group only
 
 ### **README.md**
 - Added "Quick Start" section with setup.yml reference
@@ -234,8 +232,6 @@ ansible-playbook playbooks/site.yml -i inventory/sample_inventory.yml
 # Only docker hosts
 ansible-playbook playbooks/docker-hosts.yml -i inventory/sample_inventory.yml
 
-# Only rundeck hosts
-ansible-playbook playbooks/rundeck-hosts.yml -i inventory/sample_inventory.yml
 
 # Only common servers
 ansible-playbook playbooks/common-hosts.yml -i inventory/sample_inventory.yml

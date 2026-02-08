@@ -1,0 +1,67 @@
+---
+# Semaphore Hosts Playbook
+# ========================
+# Deploy Semaphore UI on designated hosts.
+#
+# Usage:
+#   ansible-playbook playbooks/semaphore-hosts.yml -i inventory/semaphore-server.yaml
+#   ansible-playbook playbooks/semaphore-hosts.yml --check --diff --tags semaphore
+
+- name: Deploy Semaphore UI
+  hosts: semaphore_hosts
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Validate Semaphore hosts group exists
+      ansible.builtin.assert:
+        that: groups.get('semaphore_hosts', []) | length > 0
+        fail_msg: "No hosts found in 'semaphore_hosts' group. Ensure inventory is configured."
+
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - semaphore_db_password is defined
+          - semaphore_admin_password is defined
+        fail_msg: "Required variables (semaphore_db_password, semaphore_admin_password) must be defined in vault or host vars."
+
+  roles:
+    - role: apt
+      tags: [apt]
+    - role: packages
+      tags: [packages]
+    - role: user_accounts
+      tags: [users]
+    - role: ssh
+      tags: [ssh]
+    - role: timezone
+      tags: [timezone]
+    - role: hostname
+      tags: [hostname]
+    - role: firewall
+      tags: [firewall]
+    - role: updates
+      tags: [updates]
+
+    - role: semaphore_postgres
+      tags: [database, postgres, semaphore_postgres]
+
+    - role: semaphore
+      tags: [semaphore]
+
+    - role: apparmor
+      tags: [apparmor, security]
+
+  post_tasks:
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg: |
+          Semaphore UI deployment completed on {{ inventory_hostname }}.
+          - URL: http://{{ ansible_host }}:{{ semaphore_port }}
+          - Admin user: {{ semaphore_admin }}
+          - Database: {{ semaphore_db_dialect }} ({{ semaphore_db_host }}:{{ semaphore_db_port }}/{{ semaphore_db_name }})
+          - Service status: systemctl status semaphore
+          Next steps:
+          1. Access Semaphore UI at http://{{ ansible_host }}:{{ semaphore_port }}
+          2. Log in with admin credentials
+          3. Configure projects, inventories, and tasks

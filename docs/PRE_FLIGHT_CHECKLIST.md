@@ -74,7 +74,7 @@ Use this checklist before running any playbooks to ensure everything is ready.
 - [ ] **inventory/sample_inventory.yml Updated**
   - [ ] All VM IPs updated correctly (192.168.X.X)
   - [ ] Hostnames match your environment
-  - [ ] Groups assigned correctly (docker_hosts, rundeck_hosts, etc.)
+  - [ ] Groups assigned correctly (docker_hosts, etc.)
 
   ```bash
   # Verify syntax
