@@ -50,15 +50,15 @@
         - monitoring
         - mktxp
 
-    - role: syslog_ng
-      tags:
-        - monitoring
-        - syslog-ng
-
     - role: promtail
       tags:
         - monitoring
         - promtail
+
+    - role: syslog_ng
+      tags:
+        - monitoring
+        - syslog-ng
 
 #    - role: monit
 #      tags:

@@ -1,25 +1,21 @@
 @version: 3.28
-@include "scl.conf"
 
 source s_network {
     network(
-        ip("0.0.0.0")
-        port({{ syslog_ng_udp_port }})
         transport("udp")
+        port({{ syslog_ng_udp_port }})
     );
     network(
-        ip("0.0.0.0")
-        port({{ syslog_ng_tcp_port }})
         transport("tcp")
+        port({{ syslog_ng_tcp_port }})
     );
 };
 
 destination d_promtail {
     network(
-        "promtail"
-        port(1514)
+        "{{ ansible_host }}"
+        port({{ promtail_syslog_port }})
         transport("tcp")
-        template("$(format-json --scope rfc5424 --key ISODATE @timestamp=${ISODATE} @source=${SOURCE} @level=${LEVEL} host=${HOST} program=${PROGRAM} pid=${PID} message=${MESSAGE})\n")
     );
 };
 
