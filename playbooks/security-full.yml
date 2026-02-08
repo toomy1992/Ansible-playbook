@@ -21,10 +21,9 @@
         - security
         - apparmor
 
-    - role: integrity_monitoring
-      tags:
-        - security
-        - integrity-monitoring
+    #TODO: ADD OSSEC SERVER Playbook + update integrity_monitoring to integrity_monitoring_agent
+    #- role: integrity_monitoring
+    #  tags: [integrity-monitoring, security]
 
     - role: malware_scanning
       tags:

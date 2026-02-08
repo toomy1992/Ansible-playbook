@@ -1,0 +1,11 @@
+---
+# Semaphore UI Handlers
+
+- name: Restart Semaphore
+  ansible.builtin.systemd:
+    name: semaphore
+    state: restarted
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true

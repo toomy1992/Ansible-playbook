@@ -1,0 +1,85 @@
+---
+# Semaphore PostgreSQL Setup Tasks
+# ================================
+# Install and configure PostgreSQL for Semaphore UI.
+
+- name: Install PostgreSQL
+  ansible.builtin.apt:
+    name:
+      - postgresql-{{ semaphore_postgres_version }}
+      - postgresql-contrib-{{ semaphore_postgres_version }}
+      - postgresql-client-{{ semaphore_postgres_version }}
+    state: present
+    update_cache: true
+  when: semaphore_postgres_install
+
+- name: Configure PostgreSQL performance tuning
+  ansible.builtin.template:
+    src: postgresql.conf.j2
+    dest: /etc/postgresql/{{ semaphore_postgres_version }}/main/postgresql.conf
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  notify: Restart PostgreSQL
+
+- name: Ensure PostgreSQL service is running and enabled
+  ansible.builtin.systemd:
+    name: postgresql@{{ semaphore_postgres_version }}-main
+    state: started
+    enabled: true
+
+- name: Configure PostgreSQL client authentication
+  ansible.builtin.template:
+    src: pg_hba.conf.j2
+    dest: /etc/postgresql/{{ semaphore_postgres_version }}/main/pg_hba.conf
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  notify: Restart PostgreSQL
+
+- name: Create Semaphore database user
+  community.postgresql.postgresql_user:
+    name: "{{ semaphore_postgres_db_user }}"
+    password: "{{ semaphore_db_password }}"
+    state: present
+    login_unix_socket: "/var/run/postgresql"
+  become_user: postgres
+  ignore_errors: true  # User might already exist
+
+- name: Create Semaphore database
+  community.postgresql.postgresql_db:
+    name: "{{ semaphore_postgres_db_name }}"
+    owner: "{{ semaphore_postgres_db_user }}"
+    encoding: UTF8
+    state: present
+    login_unix_socket: "/var/run/postgresql"
+  become_user: postgres
+  ignore_errors: true  # Database might already exist
+
+- name: Set up backup directory
+  ansible.builtin.file:
+    path: "{{ semaphore_postgres_backup_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0750'
+  when: semaphore_postgres_backup_enabled
+
+- name: Deploy backup script
+  ansible.builtin.template:
+    src: backup_semaphore_db.sh.j2
+    dest: /usr/local/bin/backup_semaphore_db.sh
+    owner: postgres
+    group: postgres
+    mode: '0750'
+  when: semaphore_postgres_backup_enabled
+
+- name: Set up backup cron job
+  ansible.builtin.cron:
+    name: "Semaphore PostgreSQL database backup"
+    minute: "{{ semaphore_postgres_backup_cron_minute }}"
+    hour: "{{ semaphore_postgres_backup_cron_hour }}"
+    user: postgres
+    job: "/usr/local/bin/backup_semaphore_db.sh"
+    state: present
+  when: semaphore_postgres_backup_enabled

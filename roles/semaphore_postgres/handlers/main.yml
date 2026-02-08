@@ -1,0 +1,7 @@
+---
+# Semaphore PostgreSQL Handlers
+
+- name: Restart PostgreSQL
+  ansible.builtin.systemd:
+    name: postgresql@{{ semaphore_postgres_version }}-main
+    state: restarted

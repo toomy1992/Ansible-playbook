@@ -9,7 +9,7 @@ This workspace contains a comprehensive Ansible automation framework for:
 - **System Configuration**: hostname, timezone, SSH hardening, user management
 - **Security Hardening**: firewall, AppArmor, malware scanning, integrity monitoring, security audits
 - **Monitoring Stack**: Prometheus, Grafana Agent, Loki, Alertmanager, Monit
-- **Application Deployment**: Docker, Rundeck, mail services
+- **Application Deployment**: Docker, Semaphore, mail services
 - **Maintenance**: automated updates, log rotation, package management
 
 ### Key Directories
@@ -42,7 +42,7 @@ This workspace contains a comprehensive Ansible automation framework for:
 
 ### Infrastructure Operations
 - Docker container deployment and management
-- Rundeck job scheduler integration
+- Semaphore Ansible UI integration
 - Automated package updates with unattended-upgrades
 - Mail relay configuration with Postfix
 

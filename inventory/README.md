@@ -13,7 +13,7 @@ The sample inventory defines 4 groups of Ubuntu servers:
 ### 1. `common_ubuntu` - Common Servers
 Basic Ubuntu servers with essentials only.
 - **Roles**: APT, Packages, Users, SSH, Timezone, Hostname, Firewall, Mail, Updates, Security, Monitoring
-- **No**: Docker, Rundeck
+- **No**: Docker
 - **Use Case**: Database servers, file servers, utility servers
 
 ```yaml
@@ -26,7 +26,7 @@ common-02:
 ### 2. `docker_hosts` - Docker Servers
 Ubuntu servers with Docker and container support.
 - **Roles**: Essentials + Docker CE + Docker Compose
-- **No**: Rundeck
+- **No**: 
 - **Use Case**: Container platforms, microservices, application servers
 
 ```yaml
@@ -35,26 +35,11 @@ docker-01:
   docker_users: [ansible, John]
 docker-02:
   ansible_host: 192.168.1.111
-```
 
-### 3. `rundeck_hosts` - Rundeck Orchestration Servers
-Ubuntu servers with Rundeck for job orchestration.
-- **Roles**: Essentials + Rundeck
-- **No**: Docker
-- **Use Case**: Automation platform, job orchestration, runbook execution
-
-```yaml
-rundeck-01:
-  ansible_host: 192.168.1.120
-  rundeck_port: 4440
-rundeck-02:
-  ansible_host: 192.168.1.121
-```
-
-### 4. `ubuntu_desktop` - Desktop Workstations
+### 3. `ubuntu_desktop` - Desktop Workstations
 Ubuntu desktop workstations for users.
 - **Roles**: Essentials + Docker (for local development)
-- **No**: Rundeck
+- **No**:
 - **Use Case**: Developer machines, workstations
 
 ```yaml

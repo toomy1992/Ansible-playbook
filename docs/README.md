@@ -220,7 +220,6 @@ When you encounter an issue:
 
 ### Group-Specific Playbooks
 - docker-hosts.yml (Docker servers)
-- rundeck-hosts.yml (Rundeck servers)
 - common-hosts.yml (Basic servers)
 - desktop-hosts.yml (Desktop workstations)
 

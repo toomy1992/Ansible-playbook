@@ -1,0 +1,24 @@
+[Unit]
+Description=Semaphore UI
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=semaphore
+Group=semaphore
+WorkingDirectory={{ semaphore_data_path }}
+ExecStart=/usr/bin/semaphore server --config {{ semaphore_config_path }}/config.json
+Restart=always
+RestartSec=5
+Environment=SEMAPHORE_CONFIG={{ semaphore_config_path }}/config.json
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths={{ semaphore_data_path }} {{ semaphore_tmp_path }} {{ semaphore_log_path }}
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

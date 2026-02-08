@@ -1,0 +1,44 @@
+---
+# Semaphore PostgreSQL Role Defaults
+# ==================================
+# Configuration for PostgreSQL database setup for Semaphore UI.
+# Based on production PostgreSQL tuning for Ansible automation workloads.
+
+# ==================== PostgreSQL Installation ====================
+semaphore_postgres_version: 16
+semaphore_postgres_install: true
+
+# ==================== Database Configuration ====================
+semaphore_postgres_db_name: semaphore
+semaphore_postgres_db_user: semaphoreuser
+# semaphore_db_password: Set in vault or host vars
+
+# ==================== PostgreSQL Performance Tuning ====================
+# Memory settings (adjust based on server RAM)
+semaphore_postgres_shared_buffers: 256MB      # 25% of RAM for small servers
+semaphore_postgres_work_mem: 4MB              # Per-connection working memory
+semaphore_postgres_maintenance_work_mem: 64MB # Memory for maintenance operations
+semaphore_postgres_effective_cache_size: 1GB  # Estimate of OS cache
+
+# Connection settings
+semaphore_postgres_max_connections: 100
+semaphore_postgres_listen_addresses: localhost
+
+# Logging
+semaphore_postgres_log_line_prefix: '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+semaphore_postgres_log_statement: ddl
+semaphore_postgres_logging_collector: true
+
+# ==================== Backup Configuration ====================
+semaphore_postgres_backup_enabled: true
+semaphore_postgres_backup_dir: /var/backups/semaphore_postgres
+semaphore_postgres_backup_retention_days: 7
+semaphore_postgres_backup_cron_minute: 0
+semaphore_postgres_backup_cron_hour: 2
+
+# ==================== Security ====================
+semaphore_postgres_allow_remote_connections: false
+semaphore_postgres_ssl_mode: prefer
+
+# ==================== Monitoring ====================
+semaphore_postgres_monitoring_enabled: true
