@@ -22,6 +22,29 @@
   tags:
     - apparmor
 
+- name: Create drop-in directory for apparmor
+  file:
+    path: /etc/systemd/system/apparmor.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+
+- name: Set systemd timeout for apparmor
+  copy:
+    content: |
+      [Service]
+      TimeoutStopSec=150s
+    dest: /etc/systemd/system/apparmor.service.d/timeout.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify: Reload systemd daemon
+  tags:
+    - apparmor
+
 - name: Configure AppArmor system parameters
   sysctl:
     name: "{{ item.key }}"

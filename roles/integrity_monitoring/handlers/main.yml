@@ -10,3 +10,8 @@
 - name: Reload OSSEC configuration
   shell: /var/ossec/bin/ossec-control signal hup
   become: yes
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  become: yes

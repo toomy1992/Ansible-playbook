@@ -84,6 +84,7 @@
       ExecStart=/usr/local/bin/loki -config.file=/etc/loki/loki-config.yml
       Restart=on-failure
       RestartSec=10
+      TimeoutStopSec=150s
       StandardOutput=journal
       StandardError=journal
 

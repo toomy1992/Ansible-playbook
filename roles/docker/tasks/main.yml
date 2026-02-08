@@ -59,6 +59,29 @@
   tags:
     - docker
 
+- name: Create drop-in directory for docker
+  file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+
+- name: Set systemd timeout for docker
+  copy:
+    content: |
+      [Service]
+      TimeoutStopSec=150s
+    dest: /etc/systemd/system/docker.service.d/timeout.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify: Reload systemd daemon
+  tags:
+    - docker
+
 - name: Create docker group
   group:
     name: docker

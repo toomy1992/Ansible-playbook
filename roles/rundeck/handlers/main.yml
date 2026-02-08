@@ -28,3 +28,8 @@
     state: started
   become: yes
   listen: "start rundeck"
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  become: yes

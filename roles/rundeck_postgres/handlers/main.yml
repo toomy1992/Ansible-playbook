@@ -28,3 +28,8 @@
     state: stopped
   become: yes
   listen: "stop postgresql"
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  become: yes

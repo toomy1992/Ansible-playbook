@@ -94,6 +94,29 @@
   tags:
     - integrity-monitoring
 
+- name: Create drop-in directory for ossec
+  file:
+    path: /etc/systemd/system/ossec.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+
+- name: Set systemd timeout for ossec
+  copy:
+    content: |
+      [Service]
+      TimeoutStopSec=150s
+    dest: /etc/systemd/system/ossec.service.d/timeout.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify: Reload systemd daemon
+  tags:
+    - integrity-monitoring
+
 - name: Create daily OSSEC report script
   copy:
     content: |

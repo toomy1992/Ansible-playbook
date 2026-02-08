@@ -10,3 +10,8 @@
 - name: Update postfix sasl_passwd
   shell: postmap /etc/postfix/sasl_passwd && postfix reload
   become: yes
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  become: yes

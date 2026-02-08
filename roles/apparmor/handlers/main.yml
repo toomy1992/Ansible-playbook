@@ -4,3 +4,8 @@
 - name: Reload AppArmor profiles
   shell: apparmor_parser -r /etc/apparmor.d/* 2>/dev/null || true
   become: yes
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  become: yes

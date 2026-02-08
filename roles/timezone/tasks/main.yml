@@ -34,6 +34,27 @@
         state: started
         enabled: yes
       become: yes
+
+    - name: Create drop-in directory for chrony
+      file:
+        path: /etc/systemd/system/chrony.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      become: yes
+
+    - name: Set systemd timeout for chrony
+      copy:
+        content: |
+          [Service]
+          TimeoutStopSec=150s
+        dest: /etc/systemd/system/chrony.service.d/timeout.conf
+        owner: root
+        group: root
+        mode: '0644'
+      become: yes
+      notify: Reload systemd daemon
   when: ntp_package | default('chrony') == 'chrony'
   tags:
     - timezone
@@ -55,6 +76,27 @@
         state: started
         enabled: yes
       become: yes
+
+    - name: Create drop-in directory for systemd-timesyncd
+      file:
+        path: /etc/systemd/system/systemd-timesyncd.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      become: yes
+
+    - name: Set systemd timeout for systemd-timesyncd
+      copy:
+        content: |
+          [Service]
+          TimeoutStopSec=150s
+        dest: /etc/systemd/system/systemd-timesyncd.service.d/timeout.conf
+        owner: root
+        group: root
+        mode: '0644'
+      become: yes
+      notify: Reload systemd daemon
   when: ntp_package | default('chrony') == 'systemd-timesyncd'
   tags:
     - timezone

@@ -123,6 +123,30 @@
     - monit
     - monitoring
 
+- name: Create drop-in directory for monit
+  file:
+    path: /etc/systemd/system/monit.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+
+- name: Set systemd timeout for monit
+  copy:
+    content: |
+      [Service]
+      TimeoutStopSec=150s
+    dest: /etc/systemd/system/monit.service.d/timeout.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify: Reload systemd daemon
+  tags:
+    - monit
+    - monitoring
+
 - name: Verify Monit configuration
   shell: monit -t
   register: monit_syntax

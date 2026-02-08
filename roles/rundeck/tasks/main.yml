@@ -478,6 +478,30 @@
     - rundeck
     - rundeck-service
 
+- name: Create drop-in directory for rundeckd
+  file:
+    path: /etc/systemd/system/rundeckd.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+
+- name: Set systemd timeout for rundeckd
+  copy:
+    content: |
+      [Service]
+      TimeoutStopSec=150s
+    dest: /etc/systemd/system/rundeckd.service.d/timeout.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify: Reload systemd daemon
+  tags:
+    - rundeck
+    - rundeck-service
+
 - name: Wait for Rundeck to start
   wait_for:
     port: "{{ rundeck_port }}"

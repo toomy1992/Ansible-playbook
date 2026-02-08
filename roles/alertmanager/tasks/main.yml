@@ -85,6 +85,7 @@
         --web.listen-address=0.0.0.0:{{ alertmanager_port }}
       Restart=on-failure
       RestartSec=10
+      TimeoutStopSec=150s
       StandardOutput=journal
       StandardError=journal
 

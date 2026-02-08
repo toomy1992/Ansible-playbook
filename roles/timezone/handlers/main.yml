@@ -12,3 +12,8 @@
     name: systemd-timesyncd
     state: restarted
   become: yes
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  become: yes

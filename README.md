@@ -1,5 +1,7 @@
 # Ansible Complete Infrastructure Framework
 
+**Warning This Repo is in active development - it requires additional apps to to be fully functional playbook
+
 **Professional automation for system configuration, security hardening, and monitoring across Ubuntu/Debian servers.**
 
 A production-ready Ansible framework with **22 comprehensive roles** organized across **4 implementation layers**: Essentials, Applications & Services, Security, and Monitoring. Includes automated VM initialization, SSH hardening, user management, and complete observability stack.
