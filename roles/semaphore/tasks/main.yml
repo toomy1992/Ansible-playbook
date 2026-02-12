@@ -21,6 +21,7 @@
     - "{{ semaphore_data_path }}"
     - "{{ semaphore_tmp_path }}"
     - "{{ semaphore_log_path }}"
+    - "{{ semaphore_config_path }}/ssl"  # For SSL certificates
 
 - name: Download Semaphore DEB package
   ansible.builtin.get_url:
@@ -100,9 +101,10 @@
 
 - name: Wait for Semaphore to be ready
   ansible.builtin.uri:
-    url: "http://localhost:{{ semaphore_port }}/api/auth/login"
+    url: "{{ 'https' if semaphore_tls_enabled else 'http' }}://localhost:{{ semaphore_port }}/api/auth/login"
     method: GET
     status_code: 200
+    validate_certs: false  # Skip cert validation for localhost
   register: semaphore_check
   until: semaphore_check.status == 200
   retries: 30

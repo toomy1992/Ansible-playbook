@@ -22,7 +22,6 @@
       ansible.builtin.assert:
         that:
           - semaphore_db_password is defined
-          - semaphore_admin_password is defined
         fail_msg: "Required variables (semaphore_db_password, semaphore_admin_password) must be defined in vault or host vars."
 
   roles:
