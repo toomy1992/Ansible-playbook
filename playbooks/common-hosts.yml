@@ -53,9 +53,34 @@
     #TODO: ADD OSSEC SERVER Playbook + update integrity_monitoring to integrity_monitoring_agent
     #- role: integrity_monitoring
     #  tags: [integrity-monitoring, security]
+    - role: malware_scanning
+      tags:
+        - security
+        - malware-scanning
 
+    - role: security_audits
+      tags:
+        - security
+        - security-audits
   post_tasks:
     - name: Display common host completion
       debug:
         msg: "Common Ubuntu host {{ inventory_hostname }} configured successfully"
 
+    - name: Log play completion
+      debug:
+        msg: "Security hardening completed on {{ ansible_date_time.iso8601 }}"
+      tags:
+        - always
+
+    - name: Display security status
+      debug:
+        msg: |
+          Security Deployment Complete
+          =============================
+          AppArmor Status: Check with 'aa-status'
+          OSSEC Status: Check /var/ossec/bin/agent_control -l
+          Maldet Status: Check /var/log/maldet-reports/
+          Lynis Status: Check /var/log/lynis-reports/
+      tags:
+        - always
