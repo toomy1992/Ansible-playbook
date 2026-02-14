@@ -9,17 +9,10 @@ semaphore_install_method: deb  # Options: deb, binary
 semaphore_download_url: "https://github.com/semaphoreui/semaphore/releases/download/v{{ semaphore_version }}/semaphore_{{ semaphore_version }}_linux_amd64.deb"
 
 # ==================== Service Configuration ====================
-semaphore_port: 443
-semaphore_bind_address: "0.0.0.0"
+semaphore_port: 3000
+semaphore_bind_address: "127.0.0.1"  # Bind to localhost when using Nginx reverse proxy
 semaphore_base_path: ""
 semaphore_web_host: ""  # Optional: full URL for external access (e.g., https://semaphore.example.com)
-
-# ==================== TLS Configuration ====================
-semaphore_tls_enabled: true
-semaphore_tls_cert_file: "/etc/semaphore/ssl/cert.pem"
-semaphore_tls_key_file: "/etc/semaphore/ssl/key.pem"
-semaphore_tls_http_redirect_port: 80  # Redirect HTTP to HTTPS
-semaphore_domain: ""  # Domain for SSL certificate
 
 # ==================== Database Configuration ====================
 semaphore_db_dialect: postgres

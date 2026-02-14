@@ -1,0 +1,25 @@
+---
+# Nginx reverse proxy defaults
+
+nginx_package_name: nginx
+nginx_service_name: nginx
+nginx_sites_dir: /etc/nginx/sites-available
+nginx_sites_enabled_dir: /etc/nginx/sites-enabled
+nginx_ssl_dir: /etc/nginx/ssl
+nginx_config_dir: /etc/nginx
+
+# SSL configuration (assumes certificates provided externally)
+nginx_ssl_cert_file: "/etc/nginx/ssl/cert.pem"
+nginx_ssl_key_file: "/etc/nginx/ssl/privkey.pem"
+
+# Server name for Semaphore reverse proxy
+nginx_server_name: "localhost"
+
+# Upstream backend configuration
+nginx_upstream_name: "semaphore_backend"
+nginx_upstream_host: "127.0.0.1"
+nginx_upstream_port: 3000
+
+# Security headers
+nginx_add_hsts: true
+nginx_hsts_max_age: 31536000

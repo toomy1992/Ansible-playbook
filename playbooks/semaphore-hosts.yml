@@ -41,13 +41,12 @@
       tags: [firewall]
     - role: updates
       tags: [updates]
-
     - role: semaphore_postgres
       tags: [database, postgres, semaphore_postgres]
-
+    - role: nginx
+      tags: [nginx, reverse-proxy]
     - role: semaphore
       tags: [semaphore]
-
     - role: apparmor
       tags: [apparmor, security]
 

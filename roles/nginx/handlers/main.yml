@@ -1,0 +1,14 @@
+---
+# Nginx handlers
+
+- name: Reload Nginx
+  ansible.builtin.systemd:
+    name: "{{ nginx_service_name }}"
+    state: reloaded
+  become: yes
+
+- name: Restart Nginx
+  ansible.builtin.systemd:
+    name: "{{ nginx_service_name }}"
+    state: restarted
+  become: yes

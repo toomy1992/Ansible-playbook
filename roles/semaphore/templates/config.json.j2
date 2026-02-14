@@ -14,11 +14,5 @@
   "cookie_encryption": "{{ semaphore_cookie_encryption }}",
   "access_key_encryption": "{{ semaphore_access_key_encryption }}",
   "web_host": "{{ semaphore_web_host }}",
-  "tls": {
-    "enabled": {{ semaphore_tls_enabled | lower }},
-    "cert_file": "{{ semaphore_tls_cert_file }}",
-    "key_file": "{{ semaphore_tls_key_file }}",
-    "http_redirect_port": {{ semaphore_tls_http_redirect_port }}
-  },
   "log_path": "{{ semaphore_log_path }}"
 }

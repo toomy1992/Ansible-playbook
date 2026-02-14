@@ -1,0 +1,99 @@
+---
+# Nginx reverse proxy installation and configuration
+
+- name: Install Nginx
+  ansible.builtin.apt:
+    name: "{{ nginx_package_name }}"
+    state: present
+    update_cache: yes
+  become: yes
+  tags:
+    - nginx
+    - reverse-proxy
+
+- name: Create SSL directory for certificates
+  ansible.builtin.file:
+    path: "{{ nginx_ssl_dir }}"
+    state: directory
+    mode: '0755'
+  become: yes
+  tags:
+    - nginx
+    - reverse-proxy
+
+- name: Create Nginx sites configuration directory
+  ansible.builtin.file:
+    path: "{{ nginx_sites_dir }}"
+    state: directory
+    mode: '0755'
+  become: yes
+  tags:
+    - nginx
+    - reverse-proxy
+
+- name: Disable default Nginx site
+  ansible.builtin.file:
+    path: "{{ nginx_sites_enabled_dir }}/default"
+    state: absent
+  become: yes
+  notify: Reload Nginx
+  tags:
+    - nginx
+    - reverse-proxy
+
+- name: Deploy Semaphore reverse proxy vhost
+  ansible.builtin.template:
+    src: semaphore-vhost.conf.j2
+    dest: "{{ nginx_sites_dir }}/semaphore"
+    mode: '0644'
+  become: yes
+  notify: Reload Nginx
+  tags:
+    - nginx
+    - reverse-proxy
+
+- name: Enable Semaphore vhost
+  ansible.builtin.file:
+    src: "{{ nginx_sites_dir }}/semaphore"
+    dest: "{{ nginx_sites_enabled_dir }}/semaphore"
+    state: link
+  become: yes
+  notify: Reload Nginx
+  tags:
+    - nginx
+    - reverse-proxy
+
+- name: Test Nginx configuration
+  ansible.builtin.shell: nginx -t
+  register: nginx_test
+  changed_when: false
+  become: yes
+  tags:
+    - nginx
+    - reverse-proxy
+
+- name: Enable and start Nginx service
+  ansible.builtin.systemd:
+    name: "{{ nginx_service_name }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  become: yes
+  tags:
+    - nginx
+    - reverse-proxy
+
+- name: Wait for Nginx to be ready
+  ansible.builtin.uri:
+    url: "https://{{ nginx_server_name }}/"
+    method: GET
+    status_code: 200
+    validate_certs: false  # Skip cert validation for self-signed or internal certs
+  register: nginx_check
+  until: nginx_check.status == 200
+  retries: 10
+  delay: 2
+  ignore_errors: true
+  tags:
+    - nginx
+    - reverse-proxy
