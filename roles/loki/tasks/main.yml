@@ -13,16 +13,6 @@
     - loki
     - monitoring
 
-- name: Create htpasswd file for Loki basic auth
-  shell: |
-    htpasswd -bc /etc/loki/.htpasswd "{{ loki_basic_auth_user }}" "{{ loki_basic_auth_password }}"
-  when: loki_basic_auth_enabled | bool
-  become: yes
-  notify: Restart Loki
-  tags:
-    - loki
-    - monitoring
-
 - name: Create loki system user
   user:
     name: loki
@@ -48,6 +38,16 @@
     - "{{ loki_wal_dir }}"
     - /var/log/loki
   become: yes
+  tags:
+    - loki
+    - monitoring
+
+- name: Create htpasswd file for Loki basic auth
+  shell: |
+    htpasswd -bc /etc/loki/.htpasswd "{{ loki_basic_auth_user }}" "{{ loki_basic_auth_password }}"
+  when: loki_basic_auth_enabled | bool
+  become: yes
+  notify: Restart Loki
   tags:
     - loki
     - monitoring

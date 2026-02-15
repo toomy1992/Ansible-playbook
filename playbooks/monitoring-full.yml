@@ -41,10 +41,6 @@
         - monitoring
         - alertmanager
 
-    - role: docker
-      tags:
-        - docker
-
     - role: mktxp
       tags:
         - monitoring
