@@ -386,15 +386,19 @@ log_rotation_monthly: false
 # Role: loki
 # Deploy Grafana Loki for log aggregation
 
-loki_version: 2.9.0
+loki_version: 3.6.5
 loki_retention_days: 30
 loki_storage_path: /var/lib/loki
 loki_http_port: 3100
+loki_basic_auth_enabled: true
+loki_basic_auth_user: loki
+loki_basic_auth_password: "changeme123"  # Change this to a secure password
 
 loki_auth_enabled: false
 loki_chunk_retain_period: 1m
 loki_chunk_idle_period: 15m
 loki_max_chunk_age: 1h
+loki_retention_days: 7
 
 loki_log_level: info
 
@@ -406,27 +410,37 @@ prometheus_version: 2.48.0
 prometheus_port: 9090
 prometheus_scrape_interval: 15s
 prometheus_evaluation_interval: 15s
-prometheus_retention_time: 30d
+prometheus_retention_time: 7d
+prometheus_basic_auth_enabled: true
+prometheus_basic_auth_user: prometheus
+prometheus_basic_auth_password: "changeme123"  # Change this to a secure password
 
 prometheus_enable_local_node_exporter: true
 prometheus_alert_rules_file: /etc/prometheus/alert.rules.yml
 
-# ==================== Grafana Agent ====================
-# Role: grafana_agent
-# Deploy Grafana Agent for log and metrics collection
+# ==================== Grafana Alloy ====================
+# Role: grafana_alloy
+# Deploy Grafana Alloy - Unified observability backend for metrics and logs
+# Successor to Grafana Agent with enhanced capabilities
 
-grafana_agent_version: latest
-loki_push_url: "http://localhost:3100/loki/api/v1/push"
-prometheus_push_url: "http://localhost:9090/api/v1/write"
-grafana_agent_log_level: info
+grafana_alloy_version: latest
+loki_push_url: "http://{{ loki_basic_auth_user }}:{{ loki_basic_auth_password }}@localhost:3100/loki/api/v1/push"
+prometheus_push_url: "http://{{ prometheus_basic_auth_user }}:{{ prometheus_basic_auth_password }}@localhost:9090/api/v1/write"
+grafana_alloy_log_level: info
+grafana_alloy_http_port: 12345
+grafana_alloy_http_listen_addr: "127.0.0.1"
 
-# Scrape configurations
-grafana_agent_scrape_interval: 15s
-grafana_agent_scrape_timeout: 10s
+# Scrape configurations for metrics
+grafana_alloy_scrape_interval: 15s
+grafana_alloy_scrape_timeout: 10s
 
 # Metrics to collect
-grafana_agent_collect_node_metrics: true
-grafana_agent_collect_docker_metrics: false
+grafana_alloy_collect_node_metrics: true
+grafana_alloy_collect_docker_metrics: false
+
+# Logs to collect
+grafana_alloy_collect_syslog: true
+grafana_alloy_collect_auth_logs: true
 
 # ==================== Alertmanager ====================
 # Role: alertmanager

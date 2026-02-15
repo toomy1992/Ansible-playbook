@@ -1,5 +1,9 @@
 @version: 3.28
 
+# syslog-ng configuration - Compatible with Grafana Alloy
+# Alloy reads logs directly from /var/log/ files
+# This configuration listens on network ports for log forwarding
+
 source s_network {
     network(
         transport("udp")
@@ -11,15 +15,23 @@ source s_network {
     );
 };
 
-destination d_promtail {
-    network(
-        "{{ ansible_host }}"
-        port({{ promtail_syslog_port }})
-        transport("tcp")
-    );
+# Option 1: Log to local file (Alloy can read from here)
+destination d_file {
+    file("/var/log/syslog-ng-forwarded.log");
 };
+
+# Option 2: Forward to Promtail (if still in use)
+# Uncomment if Promtail is still deployed
+# destination d_promtail {
+#     network(
+#         "{{ ansible_host }}"
+#         port({{ promtail_syslog_port }})
+#         transport("tcp")
+#     );
+# };
 
 log {
     source(s_network);
-    destination(d_promtail);
+    destination(d_file);
+    # destination(d_promtail);  # Uncomment if using Promtail
 };

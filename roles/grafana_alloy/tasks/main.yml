@@ -1,0 +1,77 @@
+---
+# Grafana Alloy role - Unified observability backend replacing Grafana Agent
+
+- name: Install Grafana Alloy repository key
+  apt_key:
+    url: https://apt.grafana.com/gpg.key
+    state: present
+  become: yes
+  tags:
+    - grafana-alloy
+    - monitoring
+
+- name: Add Grafana Alloy repository
+  apt_repository:
+    repo: deb https://apt.grafana.com stable main
+    state: present
+    filename: grafana
+  become: yes
+  tags:
+    - grafana-alloy
+    - monitoring
+
+- name: Install Grafana Alloy
+  apt:
+    name: alloy
+    state: present
+    update_cache: yes
+  become: yes
+  tags:
+    - grafana-alloy
+    - monitoring
+
+- name: Create Alloy config directory
+  ansible.builtin.file:
+    path: "{{ grafana_alloy_config_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+  tags:
+    - grafana-alloy
+    - monitoring
+
+- name: Configure Grafana Alloy
+  template:
+    src: alloy-config.alloy.j2
+    dest: "{{ grafana_alloy_config_file }}"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  become: yes
+  notify: Restart Grafana Alloy
+  tags:
+    - grafana-alloy
+    - monitoring
+
+- name: Enable and start Grafana Alloy
+  systemd:
+    name: alloy
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  become: yes
+  tags:
+    - grafana-alloy
+    - monitoring
+
+- name: Verify Grafana Alloy service
+  shell: systemctl is-active alloy
+  register: alloy_status
+  changed_when: false
+  become: yes
+  tags:
+    - grafana-alloy
+    - monitoring

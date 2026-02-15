@@ -1,7 +1,7 @@
 ---
 # Loki defaults
 
-loki_version: 2.9.0
+loki_version: 3.6.5
 loki_retention_days: 30
 loki_storage_path: /var/lib/loki
 loki_wal_dir: /var/lib/loki/wal
@@ -13,3 +13,8 @@ loki_chunk_idle_period: 15m
 loki_max_chunk_age: 1h
 
 loki_log_level: info
+
+# Basic Authentication
+loki_basic_auth_enabled: true
+loki_basic_auth_user: loki
+loki_basic_auth_password: changeme123

@@ -49,8 +49,8 @@
       tags: [loki, monitoring]
     - role: prometheus
       tags: [prometheus, monitoring]
-    - role: grafana_agent
-      tags: [grafana-agent, monitoring]
+    - role: grafana_alloy
+      tags: [grafana-alloy, monitoring]
     - role: alertmanager
       tags: [alertmanager, monitoring]
     - role: monit

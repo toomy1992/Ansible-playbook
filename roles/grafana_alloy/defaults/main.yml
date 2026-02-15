@@ -1,0 +1,28 @@
+---
+# Grafana Alloy defaults
+# Alloy is the successor to Grafana Agent - unified observability backend
+
+grafana_alloy_version: latest
+grafana_alloy_http_port: 12345
+grafana_alloy_http_listen_addr: "127.0.0.1"
+grafana_alloy_log_level: info
+
+# Push URLs for metrics and logs
+loki_push_url: "http://localhost:3100/loki/api/v1/push"
+prometheus_push_url: "http://localhost:9090/api/v1/write"
+
+# Scrape configurations
+grafana_alloy_scrape_interval: 15s
+grafana_alloy_scrape_timeout: 10s
+
+# Metrics to collect
+grafana_alloy_collect_node_metrics: true
+grafana_alloy_collect_docker_metrics: false
+
+# Log collection
+grafana_alloy_collect_syslog: true
+grafana_alloy_collect_auth_logs: true
+
+# Configuration file path
+grafana_alloy_config_path: /etc/alloy
+grafana_alloy_config_file: "{{ grafana_alloy_config_path }}/config.alloy"

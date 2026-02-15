@@ -1,0 +1,16 @@
+---
+# Grafana Alloy handlers
+
+- name: Restart Grafana Alloy
+  systemd:
+    name: alloy
+    state: restarted
+    daemon_reload: yes
+  become: yes
+
+- name: Reload Grafana Alloy
+  systemd:
+    name: alloy
+    state: reloaded
+    daemon_reload: yes
+  become: yes

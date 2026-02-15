@@ -6,8 +6,19 @@
     name:
       - curl
       - unzip
+      - apache2-utils
     state: present
   become: yes
+  tags:
+    - loki
+    - monitoring
+
+- name: Create htpasswd file for Loki basic auth
+  shell: |
+    htpasswd -bc /etc/loki/.htpasswd "{{ loki_basic_auth_user }}" "{{ loki_basic_auth_password }}"
+  when: loki_basic_auth_enabled | bool
+  become: yes
+  notify: Restart Loki
   tags:
     - loki
     - monitoring
@@ -41,7 +52,17 @@
     - loki
     - monitoring
 
-- name: Download Loki binary
+- name: Check current Loki version
+  shell: /usr/local/bin/loki --version 2>/dev/null | awk '{print $3}' || echo "none"
+  register: current_loki_version
+  changed_when: false
+  failed_when: false
+  become: yes
+  tags:
+    - loki
+    - monitoring
+
+- name: Download Loki binary (if version mismatch or not installed)
   shell: |
     cd /tmp
     LOKI_VERSION="{{ loki_version }}"
@@ -49,9 +70,9 @@
     unzip -o loki-linux-amd64.zip
     mv loki-linux-amd64 /usr/local/bin/loki
     chmod +x /usr/local/bin/loki
-  args:
-    creates: /usr/local/bin/loki
+  when: current_loki_version.stdout != loki_version
   become: yes
+  notify: Restart Loki
   tags:
     - loki
     - monitoring

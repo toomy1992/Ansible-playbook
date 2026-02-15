@@ -1,0 +1,231 @@
+---
+# Promtail Removal Playbook - Complete cleanup of Promtail and syslog-ng
+# This playbook removes Promtail Docker containers, images, configurations, 
+# and related system components in preparation for Grafana Agent migration
+
+- name: Remove Promtail and syslog-ng Components
+  hosts: all
+  become: yes
+  vars:
+    promtail_image: grafana/promtail:latest
+    promtail_syslog_port: 1514
+    promtail_metrics_port: 9080
+    promtail_config_dir: /opt/promtail
+    syslog_ng_package: syslog-ng
+  
+  pre_tasks:
+    - name: Gather facts
+      setup:
+      tags:
+        - always
+
+    - name: Log removal play start
+      debug:
+        msg: "Promtail and syslog-ng removal started on {{ ansible_date_time.iso8601 }}"
+      tags:
+        - always
+
+  tasks:
+    # ========== Promtail Docker Container Removal ==========
+    - name: Stop and remove Promtail Docker container
+      community.docker.docker_container:
+        name: promtail
+        state: absent
+        force_kill: yes
+      register: container_removed
+      failed_when: false
+      tags:
+        - promtail-removal
+        - docker
+
+    - name: Log Promtail container removal status
+      debug:
+        msg: "Promtail container removal: {{ 'removed' if container_removed.changed else 'did not exist or already removed' }}"
+      tags:
+        - promtail-removal
+        - docker
+
+    # ========== Promtail Docker Image Removal ==========
+    - name: Remove Promtail Docker image
+      community.docker.docker_image:
+        name: "{{ promtail_image }}"
+        state: absent
+        force_absent: yes
+      register: image_removed
+      failed_when: false
+      tags:
+        - promtail-removal
+        - docker
+
+    - name: Log Promtail image removal status
+      debug:
+        msg: "Promtail image removal: {{ 'removed' if image_removed.changed else 'did not exist or already removed' }}"
+      tags:
+        - promtail-removal
+        - docker
+
+    # ========== Promtail Configuration Directory Removal ==========
+    - name: Remove Promtail config directory
+      ansible.builtin.file:
+        path: "{{ promtail_config_dir }}"
+        state: absent
+      register: config_dir_removed
+      tags:
+        - promtail-removal
+        - config
+
+    - name: Log Promtail config directory removal
+      debug:
+        msg: "Promtail config directory {{ promtail_config_dir }} removed"
+      when: config_dir_removed.changed
+      tags:
+        - promtail-removal
+        - config
+
+    # ========== Firewall Rules Removal ==========
+    - name: Remove UFW firewall rule for Promtail syslog port (TCP)
+      community.general.ufw:
+        rule: allow
+        port: "{{ promtail_syslog_port }}"
+        proto: tcp
+        state: absent
+      register: firewall_syslog_removed
+      failed_when: false
+      tags:
+        - promtail-removal
+        - firewall
+
+    - name: Log Promtail syslog port firewall rule removal
+      debug:
+        msg: "Firewall rule for TCP {{ promtail_syslog_port }} removal status: {{ 'removed' if firewall_syslog_removed.changed else 'did not exist or already removed' }}"
+      tags:
+        - promtail-removal
+        - firewall
+
+    - name: Remove UFW firewall rule for Promtail metrics port (TCP)
+      community.general.ufw:
+        rule: allow
+        port: "{{ promtail_metrics_port }}"
+        proto: tcp
+        state: absent
+      register: firewall_metrics_removed
+      failed_when: false
+      tags:
+        - promtail-removal
+        - firewall
+
+    - name: Log Promtail metrics port firewall rule removal
+      debug:
+        msg: "Firewall rule for TCP {{ promtail_metrics_port }} removal status: {{ 'removed' if firewall_metrics_removed.changed else 'did not exist or already removed' }}"
+      tags:
+        - promtail-removal
+        - firewall
+
+    # ========== syslog-ng Service Removal ==========
+    - name: Stop syslog-ng service (if running)
+      ansible.builtin.systemd:
+        name: syslog-ng
+        state: stopped
+        enabled: no
+      register: syslog_ng_stopped
+      failed_when: false
+      tags:
+        - promtail-removal
+        - syslog-ng
+
+    - name: Log syslog-ng service stop status
+      debug:
+        msg: "syslog-ng service stop status: {{ 'stopped' if syslog_ng_stopped.changed else 'was not running or does not exist' }}"
+      tags:
+        - promtail-removal
+        - syslog-ng
+
+    - name: Remove syslog-ng package
+      ansible.builtin.apt:
+        name: "{{ syslog_ng_package }}"
+        state: absent
+        purge: yes
+      register: syslog_ng_removed
+      failed_when: false
+      tags:
+        - promtail-removal
+        - syslog-ng
+
+    - name: Log syslog-ng package removal
+      debug:
+        msg: "syslog-ng package removal status: {{ 'removed' if syslog_ng_removed.changed else 'was not installed or already removed' }}"
+      tags:
+        - promtail-removal
+        - syslog-ng
+
+    # ========== syslog-ng Configuration Cleanup ==========
+    - name: Remove syslog-ng configuration directory
+      ansible.builtin.file:
+        path: /etc/syslog-ng
+        state: absent
+      register: syslog_ng_config_removed
+      tags:
+        - promtail-removal
+        - syslog-ng
+
+    - name: Log syslog-ng config directory removal
+      debug:
+        msg: "syslog-ng config directory /etc/syslog-ng removed"
+      when: syslog_ng_config_removed.changed
+      tags:
+        - promtail-removal
+        - syslog-ng
+
+    # ========== System User Cleanup (if applicable) ==========
+    - name: Check for promtail system user
+      ansible.builtin.getent:
+        database: passwd
+        key: promtail
+      register: promtail_user_check
+      failed_when: false
+      tags:
+        - promtail-removal
+        - users
+
+    - name: Remove promtail system user (if exists)
+      ansible.builtin.user:
+        name: promtail
+        state: absent
+        remove: yes
+      when: promtail_user_check.skipped is not defined or not promtail_user_check.skipped
+      register: promtail_user_removed
+      failed_when: false
+      tags:
+        - promtail-removal
+        - users
+
+    - name: Log promtail user removal
+      debug:
+        msg: "Promtail system user removal status: {{ 'removed' if promtail_user_removed is changed else 'did not exist or already removed' }}"
+      when: promtail_user_removed is defined
+      tags:
+        - promtail-removal
+        - users
+
+  post_tasks:
+    - name: Display removal summary
+      debug:
+        msg: |
+          ========== PROMTAIL & SYSLOG-NG REMOVAL COMPLETED ==========
+          
+          Container removed: {{ container_removed.changed }}
+          Image removed: {{ image_removed.changed }}
+          Config directory removed: {{ config_dir_removed.changed }}
+          Firewall rules removed: {{ firewall_syslog_removed.changed or firewall_metrics_removed.changed }}
+          
+          syslog-ng service stopped: {{ syslog_ng_stopped.changed }}
+          syslog-ng package removed: {{ syslog_ng_removed.changed }}
+          syslog-ng config removed: {{ syslog_ng_config_removed.changed }}
+          
+          NEXT STEPS:
+          1. Run: ansible-playbook playbooks/monitoring-full.yml --tags grafana-alloy
+          2. Verify Grafana Alloy is running: systemctl status alloy
+          3. Monitor logs in Grafana/Loki UI
+          4. Verify metrics in Grafana/Prometheus UI
+      tags:
+        - always

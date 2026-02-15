@@ -2,6 +2,7 @@ auth_enabled: {{ loki_auth_enabled | lower }}
 
 ingester:
   wal:
+    enabled: true
     dir: {{ loki_wal_dir }}
   chunk_idle_period: {{ loki_chunk_idle_period }}
   chunk_retain_period: {{ loki_chunk_retain_period }}
@@ -13,16 +14,15 @@ ingester:
       replication_factor: 1
 
 limits_config:
-  enforce_metric_name: false
   reject_old_samples: true
-  reject_old_samples_max_age: 168h
+  reject_old_samples_max_age: {{ loki_retention_days * 24 }}h
 
 schema_config:
   configs:
-    - from: 2021-06-15
-      store: boltdb-shipper
+    - from: 2024-01-01
+      store: tsdb
       object_store: filesystem
-      schema: v11
+      schema: v13
       index:
         prefix: index_
         period: 24h
@@ -30,16 +30,15 @@ schema_config:
 server:
   http_listen_port: {{ loki_http_port }}
   log_level: {{ loki_log_level }}
+  grpc_listen_port: 9096
 
 storage_config:
-  boltdb_shipper:
-    active_index_directory: {{ loki_storage_path }}/boltdb-shipper-active
-    cache_location: {{ loki_storage_path }}/boltdb-shipper-cache
-    shared_store: filesystem
   filesystem:
     directory: {{ loki_storage_path }}/chunks
+  tsdb_shipper:
+    active_index_directory: {{ loki_storage_path }}/tsdb-index
+    cache_location: {{ loki_storage_path }}/tsdb-cache
 
 compactor:
   working_directory: {{ loki_storage_path }}/compactor
-  shared_store: filesystem
   compaction_interval: 10m

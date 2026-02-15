@@ -6,8 +6,19 @@
     name:
       - curl
       - wget
+      - apache2-utils
     state: present
   become: yes
+  tags:
+    - prometheus
+    - monitoring
+
+- name: Create htpasswd file for Prometheus basic auth
+  shell: |
+    htpasswd -bc /etc/prometheus/.htpasswd "{{ prometheus_basic_auth_user }}" "{{ prometheus_basic_auth_password }}"
+  when: prometheus_basic_auth_enabled | bool
+  become: yes
+  notify: Restart Prometheus
   tags:
     - prometheus
     - monitoring
@@ -122,10 +133,13 @@
       Type=simple
       User=prometheus
       Group=prometheus
+      ExecReload=/bin/kill -HUP $MAINPID
       ExecStart=/usr/local/bin/prometheus \
         --config.file=/etc/prometheus/prometheus.yml \
         --storage.tsdb.path=/var/lib/prometheus \
-        --web.listen-address=0.0.0.0:{{ prometheus_port }}
+        --storage.tsdb.retention.time={{ prometheus_retention_time }} \
+        --web.listen-address=0.0.0.0:{{ prometheus_port }} \
+        --web.enable-remote-write-receiver
       Restart=on-failure
       RestartSec=10
       TimeoutStopSec=150s

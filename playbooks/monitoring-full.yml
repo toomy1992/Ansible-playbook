@@ -31,10 +31,10 @@
         - monitoring
         - prometheus
 
-    # - role: grafana_agent
-    #   tags:
-    #     - monitoring
-    #     - grafana-agent
+    - role: grafana_alloy
+      tags:
+        - monitoring
+        - grafana-alloy
 
     - role: alertmanager
       tags:
@@ -49,16 +49,6 @@
       tags:
         - monitoring
         - mktxp
-
-    - role: promtail
-      tags:
-        - monitoring
-        - promtail
-
-    - role: syslog_ng
-      tags:
-        - monitoring
-        - syslog-ng
 
 #    - role: monit
 #      tags:
@@ -80,11 +70,10 @@
           Log Rotation: Active
           Loki (Logs): http://localhost:3100 (metrics endpoint: /loki/api/v1/status/buildinfo)
           Prometheus (Metrics): http://localhost:9090
-          Promtail: Running (ships logs to Loki)
+          Grafana Alloy: Unified observability backend (metrics & logs)
           Alertmanager: http://localhost:9093
           MKTXP (Mikrotik Exporter): http://localhost:49090 (if enabled)
           syslog-ng: Listening on UDP 514, TCP 601
-          Promtail: Running (ships logs to Loki)
           Monit (Service Monitor): http://localhost:2812
       tags:
         - always
